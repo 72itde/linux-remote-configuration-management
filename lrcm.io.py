@@ -21,23 +21,6 @@ import shutil
 import git
 import ansible_runner
 
-#
-# configuration defaults
-#
-
-delay_before_start_seconds = 0
-repository = 'git@github.com:72itde/ansible-local-demo.git'
-branch = 'dev'
-playbook = 'playbook.yaml'
-authentication_required = 'True'
-username = 'default'
-token = 'default'  
-reboot_cronjob = 'true'
-hourly_cronjob = 'true'
-logfile = '/var/log/lrcm.io.log'
-loglevel = 'warning'
-pidfile = '/var/run/lrcm.io.pid'
-
 # parse options
 
 parser = OptionParser()
@@ -101,7 +84,7 @@ if (os.path.isfile(PIDFILE)):
 	logging.info("pid found in pidfile: "+str(pidinpidfile))
 	pidfile.close()
 	# check if process is running for pidinpidfile
-
+ 
 else:
 	logging.info("pidfile "+PIDFILE+" does not exist")
 
@@ -113,6 +96,7 @@ else:
 		logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
 		exit(1)
 
+exit(0)
 
 
 # if different: exit
