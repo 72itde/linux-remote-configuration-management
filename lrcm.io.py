@@ -22,6 +22,15 @@ import git
 import ansible_runner
 import psutil
 
+# functions
+
+def remove_pidfile_and_quit(PIDFILE):
+    # remove pidfile
+    logging.info("now removing pidfile and exit. Bye.")
+    os.remove(PIDFILE)
+    exit(0)
+    return true
+
 # parse options
 
 parser = OptionParser()
@@ -111,18 +120,6 @@ else:
         logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
         exit(1)
 
-
-
-# if different: exit
-
-# if not different: check if the old process is running
-
-# if running: exit
-
-# if not running: update pidfile
-
-# configure logging
-
 # create temporary directory
 
 workdir = tempfile.mkdtemp()
@@ -134,11 +131,29 @@ git.Repo.clone_from(REPOSITORY, workdir, branch=BRANCH, depth=1)
 
 # check if playbook file exists
 
+if (os.access(os.path.dirname(workdir+"/"+PLAYBOOK), os.R_OK)):
+    logging.info("playbook "+str(workdir+"/"+PLAYBOOK)+" found")
+else:
+    logging.error("playbook "+str(workdir+"/"+PLAYBOOK)+" not found")
+    remove_pidfile_and_quit(PIDFILE)
+
+
 # run playbook
 
 def ansible_runner_event_handler(event):
     if (dump := event.get("stdout")):
       logging.info("ansible runner: "+str(dump))
+
+def run_ansible_runner(PLAYBOOK):
+    ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK)
+    ansible_runner_config.prepare()
+    ansible_runner_config.suppress_ansible_output = True # to avoid ansible_runner's internal stdout dump
+
+    r = ansible_runner.Runner( event_handler=ansible_runner_event_handler, config=ansible_runner_config)
+
+    runner_result = r.run()
+    logging.info("runner result: "+str(runner_result))
+
 
 ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK)
 ansible_runner_config.prepare()
@@ -155,15 +170,20 @@ myhostname = str(os.uname().nodename)
 logging.info("myhostname: "+str(myhostname))
 
 # check if a playbook for this host exists
+# debug: copy main playbook to host playbook
+# shutil.copyfile(workdir+"/"+PLAYBOOK, workdir+"/"+PLAYBOOK+"-"+myhostname)
 
 
+if (os.path.isfile(workdir+"/"+PLAYBOOK+"-"+myhostname)):
+    logging.info("host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
+    # host-specific playbook run
+    run_ansible_runner(PLAYBOOK+"-"+myhostname)
+else:
+    logging.info("no host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
 
 # remove workdir recursively
 
 shutil.rmtree(workdir)
 logging.info("workdir deleted")
 
-# remove pidfile
-logging.info("now removing pidfile and exit. Bye.")
-os.remove(PIDFILE)
-exit(0)
+remove_pidfile_and_quit(PIDFILE)
