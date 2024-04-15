@@ -20,6 +20,7 @@ import tempfile
 import shutil
 import git
 import ansible_runner
+import psutil
 
 # parse options
 
@@ -73,30 +74,43 @@ PIDFILE = config.get('PIDFILE', 'pidfile')
 # check if pidfile already exists
 
 if (os.path.isfile(PIDFILE)):
-	logging.warning("pidfile "+PIDFILE+" exists")
-	# if exists, compare content to own pid
-	mypid = os.getpid()
-	logging.info("process id: "+str(mypid))
-	pidfile = open(PIDFILE, 'r')
+    logging.warning("pidfile "+PIDFILE+" exists")
+    # if exists, compare content to own pid
+    mypid = os.getpid()
+    logging.info("process id: "+str(mypid))
+    pidfile = open(PIDFILE, 'r')
+    # Read the first line of the file
+    pidinpidfile = pidfile.readline()
+    logging.info("pid found in pidfile: "+str(pidinpidfile).strip())
+    pidfile.close()
+    # ToDo: check if pidinpidfile is an unsigned integer
+    # check if process is running for pidinpidfile
 
-	# Read the first line of the file
-	pidinpidfile = pidfile.readline()
-	logging.info("pid found in pidfile: "+str(pidinpidfile))
-	pidfile.close()
-	# check if process is running for pidinpidfile
- 
+    if (psutil.pid_exists(int(pidinpidfile))):
+        logging.info("process with pid "+str(pidinpidfile).strip()+" is running. Bye.")
+        exit(0)
+    else:
+        logging.warning("process with pid "+str(pidinpidfile).strip()+" is not running")
+        # write my pid to pidfile
+        pidfile = open(PIDFILE, 'w')
+        pidfile.write(str(mypid))
+        pidfile.close()
+        logging.info("pid written to pidfile")
 else:
-	logging.info("pidfile "+PIDFILE+" does not exist")
-
+    logging.info("pidfile "+PIDFILE+" does not exist")
 	# check if pidfile path is writable
+    if (os.access(os.path.dirname(PIDFILE), os.W_OK)):
+        logging.info("pidfile path "+str(os.path.dirname(PIDFILE))+" is writable")
+        mypid = os.getpid()
+        logging.info("process id: "+str(mypid))
+        pidfile = open(PIDFILE, 'w')
+        pidfile.write(str(mypid))
+        pidfile.close()
+        logging.info("pid written to pidfile")        
+    else:
+        logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
+        exit(1)
 
-	if (os.access(os.path.dirname(PIDFILE), os.W_OK)):
-		logging.info("pidfile path "+str(os.path.dirname(PIDFILE))+" is writable")
-	else:
-		logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
-		exit(1)
-
-exit(0)
 
 
 # if different: exit
@@ -147,3 +161,9 @@ logging.info("myhostname: "+str(myhostname))
 # remove workdir recursively
 
 shutil.rmtree(workdir)
+logging.info("workdir deleted")
+
+# remove pidfile
+logging.info("now removing pidfile and exit. Bye.")
+os.remove(PIDFILE)
+exit(0)
