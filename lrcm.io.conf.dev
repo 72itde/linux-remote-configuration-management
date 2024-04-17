@@ -11,7 +11,7 @@ token: default
 reboot_cronjob: True
 hourly_cronjob: True
 [LOGGING]
-logfile: /var/log/lrcm.io.log
+logfile: ./lrcm.io.log
 loglevel: WARNING
 [PIDFILE]
-pidfile: /run/lrcm.io.pid
+pidfile: ./lrcm.io.pid

@@ -21,6 +21,8 @@ import shutil
 import git
 import ansible_runner
 import psutil
+from urllib.parse import urlparse
+from ansible.module_utils.parsing.convert_bool import boolean
 
 # functions
 
@@ -61,11 +63,20 @@ DELAY_BEFORE_START_SECONDS = config.get('GENERAL', 'delay_before_start_seconds')
 REPOSITORY = config.get('GIT','repository')
 BRANCH = config.get('GIT', 'branch')
 PLAYBOOK = config.get('GIT', 'playbook')
-AUTHENTICATION_REQUIRED = config.get('GIT', 'authentication_required')
+AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required'))
 
-if (AUTHENTICATION_REQUIRED == True ):
-	USERNAME = config.get('GIT', 'username')
-	TOKEN = config.get('GIT', 'token')
+logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
+
+if (str(AUTHENTICATION_REQUIRED) == 'True'):
+    USERNAME = config.get('GIT', 'username')
+    TOKEN = config.get('GIT', 'token')
+    o = urlparse(REPOSITORY)
+    REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+TOKEN+"@"+o.netloc+"/"+o.path)
+    logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
+else:
+    REPOSITORY_FULL_URL = REPOSITORY
+    logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
+    
 
 REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob')
 HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob')
@@ -74,6 +85,19 @@ LOGLEVEL = config.get('LOGGING', 'loglevel')
 PIDFILE = config.get('PIDFILE', 'pidfile')
 
 # syntax and rule check for config values
+
+# DELAY_BEFORE_START_SECONDS unsigned integer
+# REPOSITORY url
+# BRANCH string
+# PLAYBOOK filename
+# AUTHENTICATION_REQUIRED boolean
+# USERNAME string
+# TOKEN string
+# REBOOT_CRONJOB boolean
+# HOURLY_CRONJOB boolean
+# LOGFILE filename
+# LOGLEVEL enum(ERROR, WARNING, INFO, DEBUG)
+# PIDFILE filename
 
 
 # ----------------------------------------------------------------------
@@ -127,7 +151,7 @@ logging.info("workdir: "+str(workdir))
 
 # clone repository into workdir
 
-git.Repo.clone_from(REPOSITORY, workdir, branch=BRANCH, depth=1)
+git.Repo.clone_from(REPOSITORY_FULL_URL, workdir, branch=BRANCH, depth=1)
 
 # check if playbook file exists
 
@@ -172,7 +196,6 @@ logging.info("myhostname: "+str(myhostname))
 # check if a playbook for this host exists
 # debug: copy main playbook to host playbook
 # shutil.copyfile(workdir+"/"+PLAYBOOK, workdir+"/"+PLAYBOOK+"-"+myhostname)
-
 
 if (os.path.isfile(workdir+"/"+PLAYBOOK+"-"+myhostname)):
     logging.info("host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
