@@ -9,12 +9,12 @@
       special_time: {{CRONJOB_SPECIAL_TIME}}
       user: root
       job: {{CRONJOB_JOB}}
-      cron_file: lrcm.io_{{CRONJOB_SPECIAL_TIME}}
+      cron_file: lrcm_io_{{CRONJOB_SPECIAL_TIME}}
       state: {{CRONJOB_STATE}} # absent or present
 
   - name: Manage lrcm.io {{CRONJOB_SPECIAL_TIME}} cronjob file permissions
     file:
-      path: /etc/cron.d/lrcm.io_{{CRONJOB_SPECIAL_TIME}}
+      path: /etc/cron.d/lrcm_io_{{CRONJOB_SPECIAL_TIME}}
       owner: root
       group: root
       mode: 0600
