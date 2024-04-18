@@ -1,0 +1,21 @@
+- hosts: 127.0.0.1
+  connection: local
+  serial: 1
+  gather_facts: false
+  tasks:
+  - name: Create cronjob
+    ansible.builtin.cron:
+      name: Manage lrcm.io reboot cronjob file
+      special_time: reboot
+      user: root
+      job: /home/fgusinde/linux-remote-configuration-management/lrcm.io.py
+      cron_file: lrcm.io_reboot
+      state: present # absent or present
+
+  - name: Manage lrcm.io reboot cronjob file permissions
+    file:
+      path: /etc/cron.d/lrcm.io_reboot
+      owner: root
+      group: root
+      mode: 0600
+      state: file  # file or absent

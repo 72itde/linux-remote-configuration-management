@@ -23,6 +23,7 @@ import ansible_runner
 import psutil
 from urllib.parse import urlparse
 from ansible.module_utils.parsing.convert_bool import boolean
+from jinja2 import Template 
 
 # functions
 
@@ -168,8 +169,10 @@ def ansible_runner_event_handler(event):
     if (dump := event.get("stdout")):
       logging.info("ansible runner: "+str(dump))
 
+extravars = ""
+
 def run_ansible_runner(PLAYBOOK):
-    ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK)
+    ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK, extravars=extravars)
     ansible_runner_config.prepare()
     ansible_runner_config.suppress_ansible_output = True # to avoid ansible_runner's internal stdout dump
 
@@ -179,14 +182,7 @@ def run_ansible_runner(PLAYBOOK):
     logging.info("runner result: "+str(runner_result))
 
 
-ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK)
-ansible_runner_config.prepare()
-ansible_runner_config.suppress_ansible_output = True # to avoid ansible_runner's internal stdout dump
-
-r = ansible_runner.Runner( event_handler=ansible_runner_event_handler, config=ansible_runner_config)
-
-runner_result = r.run()
-logging.info("runner result: "+str(runner_result))
+run_ansible_runner(PLAYBOOK)
 
 # get hostname
 
@@ -203,6 +199,54 @@ if (os.path.isfile(workdir+"/"+PLAYBOOK+"-"+myhostname)):
     run_ansible_runner(PLAYBOOK+"-"+myhostname)
 else:
     logging.info("no host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
+
+def manage_cronjob(special_time, state):
+    # manage cronjobs
+    logging.info("manage cronjobs")
+    # determine absolute path of this file
+    logging.info("script path: "+os.path.abspath(__file__))
+    # add some variables
+    CRONJOB_SPECIAL_TIME = special_time
+    CRONJOB_JOB = os.path.abspath(__file__)
+    # template a playbook file for cronjobs
+    File = open('templates/cronjob.yaml.j2', 'r') 
+    content = File.read() 
+    File.close() 
+    # Render the template and pass the variables 
+    template = Template(content) 
+    rendered = template.render(CRONJOB_SPECIAL_TIME=CRONJOB_SPECIAL_TIME, CRONJOB_JOB=CRONJOB_JOB, CRONJOB_STATE=CRONJOB_STATE, CRONJOB_FILE_STATE=CRONJOB_FILE_STATE)
+    generated_cronjob_playbook_filename = workdir+"/"+"generated_playbook_"+special_time+".yaml"
+    output = open(generated_cronjob_playbook_filename, 'w') 
+    output.write(rendered) 
+    output.close()
+    run_ansible_runner(generated_cronjob_playbook_filename.yaml)
+    del output
+    del rendered
+    del template
+    del File
+    del content
+    del CRONJOB_JOB
+    del CRONJOB_SPECIAL_TIME
+    del special_time
+    return True
+
+
+
+if (str(config.get('CRONJOB', 'hourly_cronjob')) == "True" ):
+  CRONJOB_STATE = "present"
+  CRONJOB_FILE_STATE = "file"
+else:
+  CRONJOB_STATE = "absent"
+  CRONJOB_FILE_STATE = "absent"
+manage_cronjob("hourly", HOURLY_CRONJOB)
+if (str(config.get('CRONJOB', 'reboot_cronjob')) == "True" ):
+  CRONJOB_STATE = "present"
+  CRONJOB_FILE_STATE = "file"
+else:
+  CRONJOB_STATE = "absent"
+  CRONJOB_FILE_STATE = "absent"
+manage_cronjob("reboot", REBOOT_CRONJOB)
+
 
 # remove workdir recursively
 
