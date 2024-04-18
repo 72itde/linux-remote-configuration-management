@@ -219,7 +219,7 @@ def manage_cronjob(special_time, state):
     output = open(generated_cronjob_playbook_filename, 'w') 
     output.write(rendered) 
     output.close()
-    run_ansible_runner(generated_cronjob_playbook_filename.yaml)
+    run_ansible_runner(generated_cronjob_playbook_filename)
     del output
     del rendered
     del template
