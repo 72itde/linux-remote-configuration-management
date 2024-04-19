@@ -13,11 +13,11 @@
       - python3-psutil
       - ansible
       - python3-validators
-      - cronie
+      - git
       state: latest
       update_cache: true
   - name: Manage crond systemd service
     ansible.builtin.systemd:
-      state: restarted
+      state: started
       name: crond
       enabled: true

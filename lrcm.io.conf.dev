@@ -14,6 +14,6 @@ daily_cronjob: False
 [LOGGING]
 logfile: ./lrcm.io.log
 loglevel: WARNING
-logrotate_enabled: True
+logrotate_enabled: False
 [PIDFILE]
 pidfile: ./lrcm.io.pid

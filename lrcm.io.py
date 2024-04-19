@@ -279,7 +279,7 @@ def manage_cronjob(special_time, state):
     logging.info("script path: "+os.path.abspath(__file__))
     # add some variables
     CRONJOB_SPECIAL_TIME = special_time
-    CRONJOB_JOB = os.path.abspath(__file__)
+    CRONJOB_JOB = os.path.abspath(__file__)+" --configfile"+os.path.abspath(options.configfile)
     # template a playbook file for cronjobs
     File = open('templates/cronjob.yaml.j2', 'r') 
     content = File.read() 
