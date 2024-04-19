@@ -261,14 +261,14 @@ logging.info("myhostname: "+str(myhostname))
 
 # check if a playbook for this host exists
 # debug: copy main playbook to host playbook
-# shutil.copyfile(workdir+"/"+PLAYBOOK, workdir+"/"+PLAYBOOK+"-"+myhostname)
+# shutil.copyfile(workdir+"/"+PLAYBOOK, workdir+"/"+myhostname+"-"+PLAYBOOK)
 
-if (os.path.isfile(workdir+"/"+PLAYBOOK+"-"+myhostname)):
-    logging.info("host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
+if (os.path.isfile(workdir+"/"+myhostname+"-"+PLAYBOOK)):
+    logging.info("host-specific playbook found: "+str(workdir+"/"+myhostname+"-"+PLAYBOOK))
     # host-specific playbook run
     run_ansible_runner(PLAYBOOK+"-"+myhostname)
 else:
-    logging.info("no host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
+    logging.info("no host-specific playbook found: "+str(workdir+"/"+myhostname+"-"+PLAYBOOK))
 
 def manage_cronjob(special_time, state):
     log_memory_usage()
