@@ -66,24 +66,24 @@ and may work on other Linux distributions.
 
 ## system requirements
 
-### client installation/preparation
+### client preparation
 
 #### Debian 12
 
 ```
-apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron logrotate && systemctl enable cron && systemctl restart cron
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
 ```
 
 #### Fedora 39
 
 ```
-dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie logrotate && systemctl enable crond && systemctl restart crond
+dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie && systemctl enable crond && systemctl restart crond
 ```
 
 #### Linux Mint 21.3
 
 ```
-apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron logrotate && systemctl enable cron && systemctl restart cron
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
 ```
 
 You can find some Ansible playbooks for preparing clients in directory `/client-setup`.
@@ -97,13 +97,17 @@ cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-manag
 cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf.demo --debug --cronjobs=False
 ```
 
-## Roadmap/plan
+## installation
+
+## Roadmap
 
 ### May 2024: First stable version
 
-### Juli 2024: Packages for Linux distributions
+### Juli 2024: Build Packages for Linux distributions
 
-### 2024: Provide a logging solution as cloud service 
+### September 2024: Add a ping/"I'm still alive"-service
+
+### December 2024: Add a secure remote logging solution 
 
 ## commercial support
 

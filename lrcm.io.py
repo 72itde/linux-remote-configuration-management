@@ -125,8 +125,6 @@ REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob')
 HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob')
 DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob')
 
-LOGFILE = config.get('LOGGING', 'logfile')
-LOGLEVEL = config.get('LOGGING', 'loglevel')
 PIDFILE = config.get('PIDFILE', 'pidfile')
 
 # data type and rule check for config values
@@ -146,8 +144,6 @@ if (not DELAY_BEFORE_START_SECONDS >= 0):
 # REBOOT_CRONJOB boolean
 # HOURLY_CRONJOB boolean
 # DAILY_CRONJOB boolean
-# LOGFILE filename
-# LOGLEVEL enum(ERROR, WARNING, INFO, DEBUG)
 # PIDFILE filename
 
 # check platform support
@@ -157,7 +153,6 @@ if (DISTRIBUTION_PRETTY in LINUX_DISTRIBUTIONS):
     logging.info("Distribution "+DISTRIBUTION_PRETTY+" is supported")
 else:
     logging.error("Distribution "+DISTRIBUTION_PRETTY+" is not supported")
-    print("A"+DISTRIBUTION_PRETTY+"B")
     exit(1)
 
 if (PLATFORM_PYTHON_VERSION in PYTHON_VERSIONS):
@@ -281,7 +276,7 @@ def manage_cronjob(special_time, state):
     CRONJOB_SPECIAL_TIME = special_time
     CRONJOB_JOB = os.path.abspath(__file__)+" --configfile="+os.path.abspath(options.configfile)
     # template a playbook file for cronjobs
-    File = open('templates/cronjob.yaml.j2', 'r') 
+    File = open(os.path.abspath(os.path.dirname(__file__))+'/templates/cronjob.yaml.j2', 'r')
     content = File.read() 
     File.close() 
     # Render the template and pass the variables 

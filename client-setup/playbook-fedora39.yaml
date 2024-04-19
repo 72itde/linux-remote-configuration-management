@@ -14,7 +14,6 @@
       - ansible
       - python3-validators
       - git
-      - logrotate
       state: latest
       update_cache: true
   - name: Manage crond systemd service
@@ -22,9 +21,3 @@
       state: started
       name: crond
       enabled: true
-  - name: Manage logrotate systemd service
-    ansible.builtin.systemd:
-      state: started
-      name: logrotate
-      enabled: true
-
