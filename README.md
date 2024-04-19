@@ -84,7 +84,7 @@ You can find some Ansible playbooks for preparing clients in directory `/client-
 ### test with demo-repo
 
 ```
-cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch initial-dev && 
+cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch main && 
 cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf --debug --cronjobs=False
 ```
 
