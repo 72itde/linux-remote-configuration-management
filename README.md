@@ -16,6 +16,7 @@ At first we had the need to implement a remote configuration management for some
 - using a secure way
 - in a reproducable way
 - standardized
+- very small memory and cpu footprint (currently below 35 MB)
 
 We had a first client - a bash-script - running for two years doing all the things we need, but the need for more features brought us here.
 
