@@ -35,6 +35,14 @@ lrcm.io is - more or less - a simple python script. You can execute it manually 
 
 Just have a look at the sample configuration file `lrcm.io.conf`
 
+## host-specific tasks
+
+You can add a host-specific playbook to your repository; the naming convention is 
+
+`<hostname>-<playbook-name>`
+
+that means if your hostname for example is `dirtydesktop69` and your playbook-name (section `[GIT]`/`playbook:` in the config file) is `playbook.yaml` you just have to add a playbook file called `dirtydesktop69-playbook.yaml` to your repository and it will be applied to the host called `dirtydesktop69` after the standard playbook was applied. 
+
 ## Python3 version compatibility
 
 Currently this software is developed and tested on and for Python
@@ -62,19 +70,19 @@ and may work on other Linux distributions.
 #### Debian 12
 
 ```
-apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron logrotate && systemctl enable cron && systemctl restart cron
 ```
 
 #### Fedora 39
 
 ```
-dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie && systemctl enable crond && systemctl restart crond
+dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie logrotate && systemctl enable crond && systemctl restart crond
 ```
 
 #### Linux Mint 21.3
 
 ```
-apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron logrotate && systemctl enable cron && systemctl restart cron
 ```
 
 You can find some Ansible playbooks for preparing clients in directory `/client-setup`.
