@@ -145,6 +145,7 @@ if (not DELAY_BEFORE_START_SECONDS >= 0):
 # TOKEN string
 # REBOOT_CRONJOB boolean
 # HOURLY_CRONJOB boolean
+# DAILY_CRONJOB boolean
 # LOGFILE filename
 # LOGLEVEL enum(ERROR, WARNING, INFO, DEBUG)
 # PIDFILE filename
@@ -299,8 +300,6 @@ def manage_cronjob(special_time, state):
     del CRONJOB_JOB
     del CRONJOB_SPECIAL_TIME
     del special_time
-    del CRONJOB_FILE_STATE
-    del CRONJOB_STATE
     gc.collect()
     log_memory_usage()
     return True
