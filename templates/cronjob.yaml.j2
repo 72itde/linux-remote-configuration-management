@@ -1,0 +1,20 @@
+- hosts: 127.0.0.1
+  connection: local
+  serial: 1
+  gather_facts: false
+  tasks:
+  - name: Create cronjob
+    ansible.builtin.cron:
+      name: Manage lrcm.io {{CRONJOB_SPECIAL_TIME}} cronjob file
+      special_time: {{CRONJOB_SPECIAL_TIME}}
+      user: root
+      job: {{CRONJOB_JOB}}
+      cron_file: lrcm_io_{{CRONJOB_SPECIAL_TIME}}
+      state: {{CRONJOB_STATE}} # absent or present
+  - name: Manage lrcm.io {{CRONJOB_SPECIAL_TIME}} cronjob file permissions
+    file:
+      path: /etc/cron.d/lrcm_io_{{CRONJOB_SPECIAL_TIME}}
+      owner: root
+      group: root
+      mode: 0600
+      state: {{CRONJOB_FILE_STATE}}  # file or absent

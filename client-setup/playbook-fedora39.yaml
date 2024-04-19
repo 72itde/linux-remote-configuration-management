@@ -1,0 +1,23 @@
+- hosts: 127.0.0.1
+  connection: local
+  serial: 1
+  gather_facts: false
+  tasks:
+  - name: Manage package installation
+    ansible.builtin.dnf:
+      name:
+      - cronie
+      - crontabs
+      - python3-GitPython
+      - python3-ansible-runner
+      - python3-psutil
+      - ansible
+      - python3-validators
+      - git
+      state: latest
+      update_cache: true
+  - name: Manage crond systemd service
+    ansible.builtin.systemd:
+      state: started
+      name: crond
+      enabled: true

@@ -1,0 +1,19 @@
+[GENERAL]
+delay_before_start_seconds: 0
+[GIT]
+repository: https://github.com/72itde/ansible-local-demo.git
+branch: main
+playbook: playbook.yaml
+authentication_required: false
+username: myusername
+token: mytoken
+[CRONJOB]
+reboot_cronjob: False
+hourly_cronjob: False
+daily_cronjob: False
+[LOGGING]
+logfile: ./lrcm.io.log
+loglevel: WARNING
+logrotate_enabled: False
+[PIDFILE]
+pidfile: ./lrcm.io.pid
