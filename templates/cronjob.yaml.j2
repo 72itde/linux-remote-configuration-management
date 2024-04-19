@@ -3,12 +3,19 @@
   serial: 1
   gather_facts: false
   tasks:
-  - name: Manage cron installation
+  - name: Manage cron installation on Linux Mint 21.3 and Debian 12
     ansible.builtin.apt:
       name: cron
       state: present
       update_cache: yes
       install_recommends: yes
+    when: "'{{ ansible_distribution }}' == 'Debian' and '{{ ansible_distribution_version }}': '12' or '{{ ansible_distribution }}' == 'Linux Mint' and '{{ ansible_distribution_version }}': '21.3'"
+  - name: Manage cron installation on Fedora 39
+    ansible.builtin.dnf:
+      name: cronie
+      state: present
+      update_cache: yes
+    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}': '39'"
   - name: Create cronjob
     ansible.builtin.cron:
       name: Manage lrcm.io {{CRONJOB_SPECIAL_TIME}} cronjob file
@@ -24,8 +31,15 @@
       group: root
       mode: 0600
       state: {{CRONJOB_FILE_STATE}}  # file or absent
-  handlers:
-  - name: Restart cron
-    ansible.builtin.service:
+  - name: Manage cron systemd service on Linux Mint 21.3 and Debian 12
+    ansible.builtin.systemd:
+      state: started
       name: cron
-      state: restarted
+      enabled: true
+    when: "'{{ ansible_distribution }}' == 'Debian' and '{{ ansible_distribution_version }}': '12' or '{{ ansible_distribution }}' == 'Linux Mint' and '{{ ansible_distribution_version }}': '21.3'"
+  - name: Manage cron systemd service on Fedora 39
+    ansible.builtin.systemd:
+      state: started
+      name: crond
+      enabled: true
+    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}': '39'"
