@@ -85,10 +85,10 @@ You can find some Ansible playbooks for preparing clients in directory `/client-
 
 ```
 cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch main && 
-cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf --debug --cronjobs=False
+cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf.demo --debug --cronjobs=False
 ```
 
-## Roadmap
+## Roadmap/plan
 
 ### May 2024: First stable version
 

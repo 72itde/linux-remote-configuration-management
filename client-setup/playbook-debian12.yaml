@@ -14,10 +14,16 @@
       - python3-distro
       - cron
       - git
+      - logrotate
       state: latest
       update_cache: true
   - name: Manage cron systemd service
     ansible.builtin.systemd:
       state: started
       name: cron
+      enabled: true
+  - name: Manage logrotate systemd service
+    ansible.builtin.systemd:
+      state: started
+      name: logrotate
       enabled: true
