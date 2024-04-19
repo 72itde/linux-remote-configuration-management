@@ -59,8 +59,8 @@ and may work with other Python versions.
 Currently this software is developed and tested on and for
 
 - Debian Linux 12
-- Fedora Linux 39
-- Linux Mint 21.3
+
+It also works on Linux Mint 21.3 (because that's currently my favorite Linux distribution) and also on Fedora Linux 39, but not tested regularly.
 
 and may work on other Linux distributions.
 
@@ -103,7 +103,7 @@ cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.c
 
 ### May 2024: First stable version
 
-### Juli 2024: Build Packages for Linux distributions
+### Juli 2024: Build Packages for all supported Linux distributions
 
 ### September 2024: Add a ping/"I'm still alive"-service
 
