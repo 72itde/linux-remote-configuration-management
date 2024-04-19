@@ -5,13 +5,15 @@ repository: https://github.com/72itde/ansible-local-demo.git
 branch: main
 playbook: playbook.yaml
 authentication_required: false
-username: default
-token: default
+username: myusername
+token: mytoken
 [CRONJOB]
-reboot_cronjob: True
+reboot_cronjob: False
 hourly_cronjob: False
+daily_cronjob: False
 [LOGGING]
 logfile: ./lrcm.io.log
 loglevel: WARNING
+logrotate_enabled: True
 [PIDFILE]
 pidfile: ./lrcm.io.pid

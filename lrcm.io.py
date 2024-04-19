@@ -24,6 +24,26 @@ import psutil
 from urllib.parse import urlparse
 from ansible.module_utils.parsing.convert_bool import boolean
 from jinja2 import Template 
+import gc
+import resource
+import validators
+import platform
+import distro 
+
+PLATFORM_SYSTEM = str(platform.system())
+PLATFORM_PYTHON_VERSION = str(platform.python_version())
+
+
+print("platform system: "+PLATFORM_SYSTEM)
+print("Python version: "+PLATFORM_PYTHON_VERSION)
+print("Distribution: "+str(distro.name(pretty=False)))
+print("Distribution pretty: "+str(distro.name(pretty=True)))
+
+
+exit(0)
+
+# enable garbage collection
+gc.enable
 
 # functions
 
@@ -31,6 +51,7 @@ def remove_pidfile_and_quit(PIDFILE):
     # remove pidfile
     logging.info("now removing pidfile and exit. Bye.")
     os.remove(PIDFILE)
+    del PIDFILE
     exit(0)
     return true
 
@@ -39,6 +60,8 @@ def remove_pidfile_and_quit(PIDFILE):
 parser = OptionParser()
 parser.add_option("-c", "--configfile", dest="configfile", default="/etc/lcrm.io/lcrm.io.conf", help="custom config file")
 parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="run in debug mode")
+parser.add_option("-j", "--cronjobs", dest="cronjobs", default=True, help="manage cronjobs")
+
 (options, args) = parser.parse_args()
 
 if str(options.debug) == "True":
@@ -56,11 +79,25 @@ else:
 	logging.error("configfile "+options.configfile+" is not readable")
 	exit(1)
 
+if str(options.cronjobs) == "True":
+    logging.info("cronjobs management enabled")
+else:
+    logging.info("cronjobs management disabled")
+
+# memory logging
+def log_memory_usage():
+    # On linux, defaults to KB
+    memory_usage_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    memory_usage_mb = memory_usage_kb / 1024
+    logging.debug("memory usage: {:.3f}MB".format(memory_usage_mb))
+
+log_memory_usage()
+
 # read configfile
 
 config = configparser.ConfigParser()
 config.read(options.configfile)
-DELAY_BEFORE_START_SECONDS = config.get('GENERAL', 'delay_before_start_seconds')
+DELAY_BEFORE_START_SECONDS = int(config.get('GENERAL', 'delay_before_start_seconds'))
 REPOSITORY = config.get('GIT','repository')
 BRANCH = config.get('GIT', 'branch')
 PLAYBOOK = config.get('GIT', 'playbook')
@@ -74,20 +111,28 @@ if (str(AUTHENTICATION_REQUIRED) == 'True'):
     o = urlparse(REPOSITORY)
     REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+TOKEN+"@"+o.netloc+"/"+o.path)
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
+    log_memory_usage()
 else:
     REPOSITORY_FULL_URL = REPOSITORY
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
-    
+    log_memory_usage()
 
 REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob')
 HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob')
+DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob')
+
 LOGFILE = config.get('LOGGING', 'logfile')
 LOGLEVEL = config.get('LOGGING', 'loglevel')
 PIDFILE = config.get('PIDFILE', 'pidfile')
 
-# syntax and rule check for config values
+# data type and rule check for config values
 
 # DELAY_BEFORE_START_SECONDS unsigned integer
+
+if (not DELAY_BEFORE_START_SECONDS >= 0):
+    logging.error("wrong value for delay_before_start_seconds")
+    exit(1)
+
 # REPOSITORY url
 # BRANCH string
 # PLAYBOOK filename
@@ -119,7 +164,7 @@ if (os.path.isfile(PIDFILE)):
     pidfile.close()
     # ToDo: check if pidinpidfile is an unsigned integer
     # check if process is running for pidinpidfile
-
+    log_memory_usage()
     if (psutil.pid_exists(int(pidinpidfile))):
         logging.info("process with pid "+str(pidinpidfile).strip()+" is running. Bye.")
         exit(0)
@@ -130,6 +175,7 @@ if (os.path.isfile(PIDFILE)):
         pidfile.write(str(mypid))
         pidfile.close()
         logging.info("pid written to pidfile")
+        log_memory_usage()
 else:
     logging.info("pidfile "+PIDFILE+" does not exist")
 	# check if pidfile path is writable
@@ -140,7 +186,10 @@ else:
         pidfile = open(PIDFILE, 'w')
         pidfile.write(str(mypid))
         pidfile.close()
-        logging.info("pid written to pidfile")        
+        logging.info("pid written to pidfile")
+        log_memory_usage()
+        del mypid
+        gc.collect()
     else:
         logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
         exit(1)
@@ -168,19 +217,21 @@ else:
 def ansible_runner_event_handler(event):
     if (dump := event.get("stdout")):
       logging.info("ansible runner: "+str(dump))
-
-extravars = ""
+      log_memory_usage()
 
 def run_ansible_runner(PLAYBOOK):
-    ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK, extravars=extravars)
+    log_memory_usage()
+    ansible_runner_config = ansible_runner.RunnerConfig(private_data_dir=workdir, playbook=PLAYBOOK)
     ansible_runner_config.prepare()
     ansible_runner_config.suppress_ansible_output = True # to avoid ansible_runner's internal stdout dump
-
     r = ansible_runner.Runner( event_handler=ansible_runner_event_handler, config=ansible_runner_config)
-
     runner_result = r.run()
     logging.info("runner result: "+str(runner_result))
-
+    del r
+    del runner_result
+    del ansible_runner_config
+    gc.collect()
+    log_memory_usage()
 
 run_ansible_runner(PLAYBOOK)
 
@@ -201,6 +252,7 @@ else:
     logging.info("no host-specific playbook found: "+str(workdir+"/"+PLAYBOOK+"-"+myhostname))
 
 def manage_cronjob(special_time, state):
+    log_memory_usage()
     # manage cronjobs
     logging.info("manage cronjobs")
     # determine absolute path of this file
@@ -228,24 +280,35 @@ def manage_cronjob(special_time, state):
     del CRONJOB_JOB
     del CRONJOB_SPECIAL_TIME
     del special_time
+    del CRONJOB_FILE_STATE
+    del CRONJOB_STATE
+    gc.collect()
+    log_memory_usage()
     return True
 
 
-
-if (str(config.get('CRONJOB', 'hourly_cronjob')) == "True" ):
-  CRONJOB_STATE = "present"
-  CRONJOB_FILE_STATE = "file"
-else:
-  CRONJOB_STATE = "absent"
-  CRONJOB_FILE_STATE = "absent"
-manage_cronjob("hourly", HOURLY_CRONJOB)
-if (str(config.get('CRONJOB', 'reboot_cronjob')) == "True" ):
-  CRONJOB_STATE = "present"
-  CRONJOB_FILE_STATE = "file"
-else:
-  CRONJOB_STATE = "absent"
-  CRONJOB_FILE_STATE = "absent"
-manage_cronjob("reboot", REBOOT_CRONJOB)
+if str(options.cronjobs) == "True":
+    if (str(config.get('CRONJOB', 'hourly_cronjob')) == "True" ):
+        CRONJOB_STATE = "present"
+        CRONJOB_FILE_STATE = "file"
+    else:
+        CRONJOB_STATE = "absent"
+        CRONJOB_FILE_STATE = "absent"
+    manage_cronjob("hourly", HOURLY_CRONJOB)
+    if (str(config.get('CRONJOB', 'reboot_cronjob')) == "True" ):
+        CRONJOB_STATE = "present"
+        CRONJOB_FILE_STATE = "file"
+    else:
+        CRONJOB_STATE = "absent"
+        CRONJOB_FILE_STATE = "absent"
+    manage_cronjob("reboot", REBOOT_CRONJOB)
+    if (str(config.get('CRONJOB', 'daily_cronjob')) == "True" ):
+        CRONJOB_STATE = "present"
+        CRONJOB_FILE_STATE = "file"
+    else:
+        CRONJOB_STATE = "absent"
+        CRONJOB_FILE_STATE = "absent"
+    manage_cronjob("daily", DAILY_CRONJOB)
 
 
 # remove workdir recursively

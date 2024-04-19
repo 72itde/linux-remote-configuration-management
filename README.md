@@ -2,11 +2,15 @@
 
 ![lrcm.io main image](./lrcm.io.drawio.png)
 
+## use-case
+
+The main use-case is managing Linux clients without having any management infrastructure and/or network access to the client devices.
+
 ## main goal
 
 At first we had the need to implement a remote configuration management for some Linux clients
 - somewhere in the world
-- not accessible
+- not accessible remote
 - not always online
 - using a secure way
 - in a reproducable way
@@ -16,74 +20,46 @@ We had a first client - a bash-script - running for two years doing all the thin
 
 ## what you get
 
-You get an agent for your favorite Linux distribution in a fully working manner with a configured dummy backend.
+You get an agent for Linux distribution in a fully working manner with a configured dummy backend.
 
 ## what you can do
 
-You can change the configuration to use your own git instance and develop your own playbooks, roles, etc. You can also use Github as backend. Maybe our commercial offer - a very secure Gitlab instance - is also interesting for you. We're also offering our engineers to develop the playbooks you need for configuration management.
+You can change the configuration to use your own git instance and develop your own playbooks, roles, etc. You can also use Github or another git-compatible platform as backend. Maybe our commercial offer - a very secure Gitlab instance - is also interesting for you. We're also offering our engineers to develop the playbooks you need for configuration management.
 
-## compatibility matrix
+## Python3 version compatibility
 
-This software will be tested for 100% compatibility on the following operating systems:
+- 3.10.12
+- 3.11.2
 
-- Ubuntu 22.04
-- Rocky Linux 9
+## distribution compatibility
 
-and maybe also for
+Currently this software is developed and tested on and for
 
-- Debian 11 (atm missing package python3-ansible-runner)
-- Debian 12
-- Ubuntu 20.04
-- Rocky Linux 8
+- Debian Linux 12
+- Fedora Linux 39
+- Linux Mint 21.3
+
+and may work on other Linux distributions.
 
 ## installation
-
-### install dependencies
-
-#### Debian 11
-
-```
-
-```
 
 #### Debian 12
 
 ```
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil
 ```
 
-#### Ubuntu 20.04
+#### Fedora 39
 
 ```
-
+dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible
 ```
 
-#### Ubuntu 22.04
-
-```
-apt-get update
-apt-get -y install python3 python3-git python3-ansible-runner
-```
-
-#### Ubuntu 24.04
+#### Linux Mint 21.3
 
 ```
 
 ```
-
-#### Rocky Linux 8
-
-```
-
-```
-
-#### Rocky Linux 9
-
-```
-dnf install git python3-git pip ansible-core
-pip3 install GitPython ansible_runner   
-```
-
-
 
 
 ## testing
@@ -91,11 +67,6 @@ pip3 install GitPython ansible_runner
 ### test with demo-repo
 
 ```
-git clone https://github.com/72itde/linux-remote-configuration-management.git --branch initial-dev
-cd linux-remote-configuration-management/
-./lrcm.io.py --configfile=lrcm.io.conf --debug
+cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch initial-dev && 
+cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf --debug --cronjobs=False
 ```
-
-## packages
-
-No packages so far.
