@@ -36,10 +36,11 @@
       state: started
       name: cron
       enabled: true
-    when: "'{{ ansible_distribution }}' == 'Debian' and '{{ ansible_distribution_version }}': '12' or '{{ ansible_distribution }}' == 'Linux Mint' and '{{ ansible_distribution_version }}': '21.3'"
+    when: "('{{ ansible_distribution }}' == 'Debian' and '{{ ansible_distribution_version }}' == '12') or 
+           ('{{ ansible_distribution }}' == 'Linux Mint' and '{{ ansible_distribution_version }}' == '21.3')"
   - name: Manage cron systemd service on Fedora 39
     ansible.builtin.systemd:
       state: started
       name: crond
       enabled: true
-    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}': '39'"
+    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}' == '39'"
