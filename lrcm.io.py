@@ -30,17 +30,21 @@ import validators
 import platform
 import distro 
 
-PLATFORM_SYSTEM = str(platform.system())
+
+# We get it from distro.name(pretty=True)
+LINUX_DISTRIBUTIONS = [
+    'Fedora Linux 39 (Workstation Edition)',
+    'Debian GNU/Linux 12 (bookworm)',
+    'Linux Mint 21.3'
+    ]
+PYTHON_VERSIONS = [
+    '3.10.12',
+    '3.11.2',
+    '3.12.0'
+]
+
+DISTRIBUTION_PRETTY = str(distro.name(pretty=True))
 PLATFORM_PYTHON_VERSION = str(platform.python_version())
-
-
-print("platform system: "+PLATFORM_SYSTEM)
-print("Python version: "+PLATFORM_PYTHON_VERSION)
-print("Distribution: "+str(distro.name(pretty=False)))
-print("Distribution pretty: "+str(distro.name(pretty=True)))
-
-
-exit(0)
 
 # enable garbage collection
 gc.enable
@@ -145,6 +149,21 @@ if (not DELAY_BEFORE_START_SECONDS >= 0):
 # LOGLEVEL enum(ERROR, WARNING, INFO, DEBUG)
 # PIDFILE filename
 
+# check platform support
+
+
+if (DISTRIBUTION_PRETTY in LINUX_DISTRIBUTIONS):
+    logging.info("Distribution "+DISTRIBUTION_PRETTY+" is supported")
+else:
+    logging.error("Distribution "+DISTRIBUTION_PRETTY+" is not supported")
+    print("A"+DISTRIBUTION_PRETTY+"B")
+    exit(1)
+
+if (PLATFORM_PYTHON_VERSION in PYTHON_VERSIONS):
+    logging.info("Python version "+PLATFORM_PYTHON_VERSION+" is supported")
+else:
+    logging.error("Python version "+PLATFORM_PYTHON_VERSION+" is not supported")
+    exit(1)
 
 # ----------------------------------------------------------------------
 # pidfile management
