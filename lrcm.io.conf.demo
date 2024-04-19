@@ -11,9 +11,5 @@ token: mytoken
 reboot_cronjob: False
 hourly_cronjob: False
 daily_cronjob: False
-[LOGGING]
-logfile: ./lrcm.io.log
-loglevel: WARNING
-logrotate_enabled: False
 [PIDFILE]
 pidfile: ./lrcm.io.pid

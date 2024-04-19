@@ -16,6 +16,7 @@ At first we had the need to implement a remote configuration management for some
 - using a secure way
 - in a reproducable way
 - standardized
+- very small memory and cpu footprint (currently below 35 MB)
 
 We had a first client - a bash-script - running for two years doing all the things we need, but the need for more features brought us here.
 
@@ -35,6 +36,14 @@ lrcm.io is - more or less - a simple python script. You can execute it manually 
 
 Just have a look at the sample configuration file `lrcm.io.conf`
 
+## host-specific tasks
+
+You can add a host-specific playbook to your repository; the naming convention is 
+
+`<hostname>-<playbook-name>`
+
+that means if your hostname for example is `dirtydesktop69` and your playbook-name (section `[GIT]`/`playbook:` in the config file) is `playbook.yaml` you just have to add a playbook file called `dirtydesktop69-playbook.yaml` to your repository and it will be applied to the host called `dirtydesktop69` after the standard playbook was applied. 
+
 ## Python3 version compatibility
 
 Currently this software is developed and tested on and for Python
@@ -50,14 +59,14 @@ and may work with other Python versions.
 Currently this software is developed and tested on and for
 
 - Debian Linux 12
-- Fedora Linux 39
-- Linux Mint 21.3
+
+It also works on Linux Mint 21.3 (because that's currently my favorite Linux distribution) and also on Fedora Linux 39, but not tested regularly.
 
 and may work on other Linux distributions.
 
 ## system requirements
 
-### client installation/preparation
+### client preparation
 
 #### Debian 12
 
@@ -88,13 +97,17 @@ cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-manag
 cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf.demo --debug --cronjobs=False
 ```
 
-## Roadmap/plan
+## installation
+
+## Roadmap
 
 ### May 2024: First stable version
 
-### Juli 2024: Packages for Linux distributions
+### Juli 2024: Build Packages for all supported Linux distributions
 
-### 2024: Provide a logging solution as cloud service 
+### September 2024: Add a ping/"I'm still alive"-service
+
+### December 2024: Add a secure remote logging solution 
 
 ## commercial support
 

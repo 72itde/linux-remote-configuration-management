@@ -1,0 +1,11 @@
+Package: lrcm.io
+Version: 0.2
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: Florian Gusinde <florian.gusinde@72it.de>
+Build-Depends: debhelper (>=10)
+Standards-Version: 4.0.0
+Depends: python3, python3-git, python3-ansible-runner, python3-validators, python3-psutil, python3-distro, cron
+Homepage: https://www.lrcm.io
+Description: lrcm.io client for linux remote configuration management system
