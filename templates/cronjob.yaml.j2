@@ -15,7 +15,7 @@
       name: cronie
       state: present
       update_cache: yes
-    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}': '39'"
+    when: "'{{ ansible_distribution }}' == 'Fedora' and '{{ ansible_distribution_version }}' == '39'"
   - name: Create cronjob
     ansible.builtin.cron:
       name: Manage lrcm.io {{CRONJOB_SPECIAL_TIME}} cronjob file
