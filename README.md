@@ -46,13 +46,13 @@ and may work on other Linux distributions.
 #### Debian 12
 
 ```
-apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
 ```
 
 #### Fedora 39
 
 ```
-dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators
+dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie && systemctl enable crond && systemctl restart crond
 ```
 
 #### Linux Mint 21.3
