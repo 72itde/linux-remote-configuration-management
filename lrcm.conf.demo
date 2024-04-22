@@ -4,12 +4,12 @@ delay_before_start_seconds: 0
 repository: https://github.com/72itde/ansible-local-demo.git
 branch: main
 playbook: playbook.yaml
-authentication_required: false
+authentication_required: False
 username: myusername
 token: mytoken
 [CRONJOB]
-reboot_cronjob: True
-hourly_cronjob: True
+reboot_cronjob: False
+hourly_cronjob: False
 daily_cronjob: False
 [PIDFILE]
-pidfile: /run/lrcm.io.pid
+pidfile: ./lrcm.pid

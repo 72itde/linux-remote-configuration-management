@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-# lrcm.io.py - linux remote configuration management agent
+# lrcm.py - linux remote configuration management agent
 #
 # Github: https://github.com/72itde/linux-remote-configuration-management
 # Developer: https://www.72it.de/#tab-contact
 #
-# Version: development
+# Version: 0.3
 
 #
 # imports
