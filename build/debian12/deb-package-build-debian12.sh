@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Debian 12 deb package build for lrcm.io
+# Debian 12 deb package build for lrcm
 
-cp ../../lrcm.io.conf ./lrcm.io/etc/lrcm.io/
-cp ../../lrcm.io.py ./lrcm.io/opt/lrcm.io/
-cp ../../templates/cronjob.yaml.j2 ./lrcm.io/opt/lrcm.io/templates/
-chmod -R 0700 ./lrcm.io/opt/ 
-chmod 0600 ./lrcm.io/etc/lrcm.io/lrcm.io.conf
-chmod 0600 ./lrcm.io/opt/lrcm.io/templates/cronjob.yaml.j2
-chmod 0700 ./lrcm.io/opt/lrcm.io/lrcm.io.py
+cp ../../lrcm.conf ./lrcm/etc/lrcm/
+cp ../../lrcm.py ./lrcm/opt/lrcm/
+cp ../../templates/cronjob.yaml.j2 ./lrcm/opt/lrcm/templates/
+chmod -R 0700 ./lrcm/opt/ 
+chmod 0600 ./lrcm/etc/lrcm/lrcm.conf
+chmod 0600 ./lrcm/opt/lrcm/templates/cronjob.yaml.j2
+chmod 0700 ./lrcm/opt/lrcm/lrcm.py
 
-dpkg-deb --root-owner-group --build lrcm.io
+dpkg-deb --root-owner-group --build lrcm
 
-rm ./lrcm.io/etc/lrcm.io/lrcm.io.conf
-rm ./lrcm.io/opt/lrcm.io/lrcm.io.py
-rm ./lrcm.io/opt/lrcm.io/templates/cronjob.yaml.j2
+rm ./lrcm/etc/lrcm/lrcm.conf
+rm ./lrcm/opt/lrcm/lrcm.py
+rm ./lrcm/opt/lrcm/templates/cronjob.yaml.j2

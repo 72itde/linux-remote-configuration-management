@@ -1,10 +1,10 @@
-# linux-remote-configuration-management: lrcm.io
+# linux-remote-configuration-management: lrcm
 
-![lrcm.io main image](./lrcm.io.drawio.png)
+![lrcm main image](./lrcm.drawio.png)
 
 ## use-case
 
-The main use-case is managing Linux clients without having any management infrastructure and/or network access to the client devices, e.g. at (remote) schools, universities, IoT-devices, in science, etc.
+The main use-case is managing Linux clients without having any management infrastructure and/or network access to the client devices, e.g. at (remote) schools, universities, IoT-devices, in science, unattended terminals, marketing displays, sensors etc.
 
 ## main goal
 
@@ -30,11 +30,11 @@ You can change the configuration to use your own git instance and develop your o
 
 ## How it works
 
-lrcm.io is - more or less - a simple python script. You can execute it manually or scheduled by cron (or whatever). The script clones a git repository which contains the playbook to run on your computer(s).
+lrcm is - more or less - a simple python script. You can execute it manually or scheduled by cron (or whatever). The script clones a git repository which contains the playbook to run on your computer(s).
 
 ## configuration
 
-Just have a look at the sample configuration file `lrcm.io.conf`
+Just have a look at the sample configuration file `lrcm.conf`
 
 ## host-specific tasks
 
@@ -46,7 +46,7 @@ that means if your hostname for example is `dirtydesktop69` and your playbook-na
 
 ## Python3 version compatibility
 
-Currently this software is developed and tested on and for Python
+Currently this software is developed and tested on for Python
 
 - 3.10.12
 - 3.11.2
@@ -56,13 +56,11 @@ and may work with other Python versions.
 
 ## Linux distribution and version compatibility
 
-Currently this software is developed and tested on and for
+Currently this software is developed and tested on and for Debian Linux 12.
 
-- Debian Linux 12
+It also works on Linux Mint 21.3 (because that's currently my favorite Linux Desktop distribution) and also on Fedora Linux 39, but not tested regularly.
 
-It also works on Linux Mint 21.3 (because that's currently my favorite Linux distribution) and also on Fedora Linux 39, but not tested regularly.
-
-and may work on other Linux distributions.
+and may work on other Linux distributions. We plan to support Debian 11, Debian 12, Ubuntu 22.04, 24.04, Fedora 39, Rocky 9 and openSuSE.
 
 ## system requirements
 
@@ -94,7 +92,7 @@ You can find some Ansible playbooks for preparing clients in directory `/client-
 
 ```
 cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch main && 
-cd linux-remote-configuration-management/ && ./lrcm.io.py --configfile=lrcm.io.conf.demo --debug --cronjobs=False
+cd linux-remote-configuration-management/ && ./lrcm.py --configfile=lrcm.conf.demo --debug --cronjobs=False
 ```
 
 ## installation
