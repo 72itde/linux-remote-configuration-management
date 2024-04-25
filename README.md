@@ -97,6 +97,24 @@ cd linux-remote-configuration-management/ && ./lrcm.py --configfile=lrcm.conf.de
 
 ## installation
 
+### Debian 12
+
+Use a .deb-package provided on https://lrcm.72it.de/
+
+### Fedora 39
+
+Currently no packages available so please use `git clone`.
+
+### Linux Mint 21.3
+
+Currently no packages available so please use `git clone`.
+
+## Token creation
+
+### Gitlab
+
+A token in Gitlab must have an expiration date that could lead to problems; you can extend the token by using SQL in the Gitlab database. Use role **Reporter** and check **read_repository**
+
 ## Roadmap
 
 ### May 2024: First stable version

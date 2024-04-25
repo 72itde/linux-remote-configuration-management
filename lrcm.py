@@ -62,7 +62,7 @@ def remove_pidfile_and_quit(PIDFILE):
 # parse options
 
 parser = OptionParser()
-parser.add_option("-c", "--configfile", dest="configfile", default="/etc/lcrm.io/lcrm.io.conf", help="custom config file")
+parser.add_option("-c", "--configfile", dest="configfile", default="/etc/lrcm/lrcm.conf", help="custom config file")
 parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="run in debug mode")
 parser.add_option("-j", "--cronjobs", dest="cronjobs", default=True, help="manage cronjobs")
 
