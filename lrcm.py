@@ -5,7 +5,7 @@
 # Github: https://github.com/72itde/linux-remote-configuration-management
 # Developer: https://www.72it.de/#tab-contact
 #
-# Version: 0.3
+# Version: 0.5.2
 
 #
 # imports
@@ -28,10 +28,13 @@ import gc
 import resource
 import validators
 import platform
-import distro 
+import distro
+import random
+from time import sleep
 
 
 # We get it from distro.name(pretty=True)
+
 LINUX_DISTRIBUTIONS = [
     'Fedora Linux 39 (Workstation Edition)',
     'Debian GNU/Linux 12 (bookworm)',
@@ -101,11 +104,12 @@ log_memory_usage()
 
 config = configparser.ConfigParser()
 config.read(options.configfile)
-DELAY_BEFORE_START_SECONDS = int(config.get('GENERAL', 'delay_before_start_seconds'))
+DELAY_BEFORE_START_SECONDS = int(config.get('GENERAL', 'delay_before_start_seconds', fallback=60))
+DELAY_BEFORE_START_RANDOM_MAX_SECONDS = int(config.get('GENERAL', 'delay_before_start_random_max_seconds', fallback=60))
 REPOSITORY = config.get('GIT','repository')
-BRANCH = config.get('GIT', 'branch')
-PLAYBOOK = config.get('GIT', 'playbook')
-AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required'))
+BRANCH = config.get('GIT', 'branch', fallback='main')
+PLAYBOOK = config.get('GIT', 'playbook', fallback='playbook.yaml')
+AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required', fallback='False'))
 
 logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
 
@@ -121,11 +125,11 @@ else:
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
     log_memory_usage()
 
-REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob')
-HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob')
-DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob')
+REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob', fallback='False')
+HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob', fallback='False')
+DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob', fallback='False')
 
-PIDFILE = config.get('PIDFILE', 'pidfile')
+PIDFILE = config.get('PIDFILE', 'pidfile', fallback='/run/lrcm.pid')
 
 # data type and rule check for config values
 
@@ -134,6 +138,13 @@ PIDFILE = config.get('PIDFILE', 'pidfile')
 if (not DELAY_BEFORE_START_SECONDS >= 0):
     logging.error("wrong value for delay_before_start_seconds")
     exit(1)
+
+# DELAY_BEFORE_START_RANDOM_MAX_SECONDS unsigned integer
+
+if (not DELAY_BEFORE_START_RANDOM_MAX_SECONDS >= 0):
+    logging.error("wrong value for delay_before_start_random_max_seconds")
+    exit(1)
+
 
 # REPOSITORY url
 # BRANCH string
@@ -208,6 +219,15 @@ else:
     else:
         logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
         exit(1)
+
+
+logging.debug("DELAY_BEFORE_START_SECONDS: "+str(DELAY_BEFORE_START_SECONDS))
+logging.debug("DELAY_BEFORE_START_RANDOM_MAX_SECONDS: "+str(DELAY_BEFORE_START_RANDOM_MAX_SECONDS))
+mysleeptime = (DELAY_BEFORE_START_SECONDS+random.randrange(0, DELAY_BEFORE_START_RANDOM_MAX_SECONDS))
+logging.debug("mysleeptime: "+str(mysleeptime))
+sleep(mysleeptime)
+
+
 
 # create temporary directory
 

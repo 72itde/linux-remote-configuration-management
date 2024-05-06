@@ -1,5 +1,6 @@
 [GENERAL]
-delay_before_start_seconds: 0
+delay_before_start_seconds: 3
+delay_before_start_random_max_seconds: 60
 [GIT]
 repository: https://github.com/72itde/ansible-local-demo.git
 branch: main
