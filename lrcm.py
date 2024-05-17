@@ -33,7 +33,6 @@ import random
 from time import sleep
 import logging.handlers
 import logging_loki
-from multiprocessing import Queue
 
 
 # We get it from distro.name(pretty=True)
