@@ -5,7 +5,7 @@
 # Github: https://github.com/72itde/linux-remote-configuration-management
 # Developer: https://www.72it.de/#tab-contact
 #
-# Version: 0.3
+# Version: 0.6.1
 
 #
 # imports
@@ -28,10 +28,15 @@ import gc
 import resource
 import validators
 import platform
-import distro 
+import distro
+import random
+from time import sleep
+import logging.handlers
+import logging_loki
 
 
 # We get it from distro.name(pretty=True)
+
 LINUX_DISTRIBUTIONS = [
     'Fedora Linux 39 (Workstation Edition)',
     'Debian GNU/Linux 12 (bookworm)',
@@ -101,11 +106,12 @@ log_memory_usage()
 
 config = configparser.ConfigParser()
 config.read(options.configfile)
-DELAY_BEFORE_START_SECONDS = int(config.get('GENERAL', 'delay_before_start_seconds'))
+DELAY_BEFORE_START_SECONDS = int(config.get('GENERAL', 'delay_before_start_seconds', fallback=60))
+DELAY_BEFORE_START_RANDOM_MAX_SECONDS = int(config.get('GENERAL', 'delay_before_start_random_max_seconds', fallback=60))
 REPOSITORY = config.get('GIT','repository')
-BRANCH = config.get('GIT', 'branch')
-PLAYBOOK = config.get('GIT', 'playbook')
-AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required'))
+BRANCH = config.get('GIT', 'branch', fallback='main')
+PLAYBOOK = config.get('GIT', 'playbook', fallback='playbook.yaml')
+AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required', fallback='False'))
 
 logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
 
@@ -121,11 +127,42 @@ else:
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
     log_memory_usage()
 
-REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob')
-HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob')
-DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob')
+REBOOT_CRONJOB = config.get('CRONJOB', 'reboot_cronjob', fallback='False')
+HOURLY_CRONJOB = config.get('CRONJOB', 'hourly_cronjob', fallback='False')
+DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob', fallback='False')
 
-PIDFILE = config.get('PIDFILE', 'pidfile')
+PIDFILE = config.get('PIDFILE', 'pidfile', fallback='/run/lrcm.pid')
+
+LOKI_LOGGING_ENABLED = config.get('LOGGING', 'enabled', fallback='False')
+LOKI_URL = config.get('LOGGING', 'url', fallback='http://localhost:3100/loki/api/v1/push')
+LOKI_AUTHENTICATION_REQUIRED = config.get('LOGGING', 'authentication_required', fallback='False')
+LOKI_USERNAME = config.get('LOGGING', 'username', fallback='changeme')
+LOKI_PASSWORD = config.get('LOGGING', 'password', fallback='changeme')
+
+# get hostname
+
+myhostname = str(os.uname().nodename)
+logging.info("myhostname: "+str(myhostname))
+
+# remote logging to Loki
+
+logging.info("LOKI_LOGGING_ENABLED: "+str(LOKI_LOGGING_ENABLED))
+
+
+if (LOKI_LOGGING_ENABLED == 'true'):
+    logging.info("Loki logging is enabled")
+    logger_extra = {"tags": {"service": "lrcm", "hostname": str(myhostname)}}
+    handler = logging_loki.LokiHandler(
+        url=str(LOKI_URL),
+        tags={"hostname": str(myhostname)},
+        auth=(str(LOKI_USERNAME), str(LOKI_PASSWORD)),
+        version="1",
+    )
+
+    logging = logging.getLogger("lrcmlogger")
+    logging.addHandler(handler)
+    # logging = logging.LoggerAdapter(logging, logger_extra)
+    logging.info("Loki logger enabled", extra=logger_extra)
 
 # data type and rule check for config values
 
@@ -134,6 +171,13 @@ PIDFILE = config.get('PIDFILE', 'pidfile')
 if (not DELAY_BEFORE_START_SECONDS >= 0):
     logging.error("wrong value for delay_before_start_seconds")
     exit(1)
+
+# DELAY_BEFORE_START_RANDOM_MAX_SECONDS unsigned integer
+
+if (not DELAY_BEFORE_START_RANDOM_MAX_SECONDS >= 0):
+    logging.error("wrong value for delay_before_start_random_max_seconds")
+    exit(1)
+
 
 # REPOSITORY url
 # BRANCH string
@@ -209,6 +253,15 @@ else:
         logging.error("pidfile path "+str(os.path.dirname(PIDFILE))+" is not writable")
         exit(1)
 
+
+logging.debug("DELAY_BEFORE_START_SECONDS: "+str(DELAY_BEFORE_START_SECONDS))
+logging.debug("DELAY_BEFORE_START_RANDOM_MAX_SECONDS: "+str(DELAY_BEFORE_START_RANDOM_MAX_SECONDS))
+mysleeptime = (DELAY_BEFORE_START_SECONDS+random.randrange(0, DELAY_BEFORE_START_RANDOM_MAX_SECONDS))
+logging.debug("mysleeptime: "+str(mysleeptime))
+sleep(mysleeptime)
+
+
+
 # create temporary directory
 
 workdir = tempfile.mkdtemp()
@@ -250,10 +303,7 @@ def run_ansible_runner(PLAYBOOK):
 
 run_ansible_runner(PLAYBOOK)
 
-# get hostname
 
-myhostname = str(os.uname().nodename)
-logging.info("myhostname: "+str(myhostname))
 
 # check if a playbook for this host exists
 # debug: copy main playbook to host playbook
