@@ -1,9 +1,14 @@
 # changelog
 
 
-## 0.5.2 (coming soon)
+## 0.6.0
 
-Switch back from `SafeConfigParser` to `ConfigParser` because `SafeConfigParser` is deprecated in Python 3.12
+- Add logging to (remote) Loki. Authentication has to be done via basic auth for now.
+
+## 0.5.2
+
+- Switch back from `SafeConfigParser` to `ConfigParser` because `SafeConfigParser` is deprecated in Python 3.12
+- add LOGGING-section and url-parameter for Loki as logging target. I assume authentication is always mandatory and credentials are the same as for Gitlab
 
 ## 0.5.1
 
