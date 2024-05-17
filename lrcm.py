@@ -5,7 +5,7 @@
 # Github: https://github.com/72itde/linux-remote-configuration-management
 # Developer: https://www.72it.de/#tab-contact
 #
-# Version: 0.6.0
+# Version: 0.6.1
 
 #
 # imports
@@ -378,6 +378,5 @@ if str(options.cronjobs) == "True":
 
 shutil.rmtree(workdir)
 logging.info("workdir deleted")
-logging.error("test for error logging without debug mode")
 
 remove_pidfile_and_quit(PIDFILE)
