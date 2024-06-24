@@ -99,7 +99,7 @@ cd linux-remote-configuration-management/ && ./lrcm.py --configfile=lrcm.conf.de
 
 ### Debian 12
 
-Use a .deb-package provided on https://lrcm.72it.de/
+Use the .deb-package provided in releases
 
 ### Fedora 39
 
@@ -117,10 +117,13 @@ A token in Gitlab must have an expiration date that could lead to problems; you 
 
 ## Roadmap
 
-- May 2024: First stable version
-- July 2024: Build Packages for all supported Linux distributions
-- September 2024: Add a ping/"I'm still alive"-service
-- December 2024: Add a secure remote logging solution 
+- July 2024: First stable version
+
+later:
+
+- Build Packages for all supported Linux distributions
+- Add a ping/"I'm still alive"-service
+- Add a secure remote logging solution 
 
 ## commercial support
 
