@@ -33,9 +33,6 @@ import random
 from time import sleep
 import logging.handlers
 import sys
-sys.path.insert(0, './modules/python-logging-loki')
-import logging_loki
-
 
 
 # We get it from distro.name(pretty=True)
@@ -136,36 +133,10 @@ DAILY_CRONJOB = config.get('CRONJOB', 'daily_cronjob', fallback='False')
 
 PIDFILE = config.get('PIDFILE', 'pidfile', fallback='/run/lrcm.pid')
 
-LOKI_LOGGING_ENABLED = config.get('LOGGING', 'enabled', fallback='False')
-LOKI_URL = config.get('LOGGING', 'url', fallback='http://localhost:3100/loki/api/v1/push')
-LOKI_AUTHENTICATION_REQUIRED = config.get('LOGGING', 'authentication_required', fallback='False')
-LOKI_USERNAME = config.get('LOGGING', 'username', fallback='changeme')
-LOKI_PASSWORD = config.get('LOGGING', 'password', fallback='changeme')
-
 # get hostname
 
 myhostname = str(os.uname().nodename)
 logging.info("myhostname: "+str(myhostname))
-
-# remote logging to Loki
-
-logging.info("LOKI_LOGGING_ENABLED: "+str(LOKI_LOGGING_ENABLED))
-
-
-if (LOKI_LOGGING_ENABLED == 'true'):
-    logging.info("Loki logging is enabled")
-    logger_extra = {"tags": {"service": "lrcm", "hostname": str(myhostname)}}
-    handler = logging_loki.LokiHandler(
-        url=str(LOKI_URL),
-        tags={"hostname": str(myhostname)},
-        auth=(str(LOKI_USERNAME), str(LOKI_PASSWORD)),
-        version="1",
-    )
-
-    logging = logging.getLogger("lrcmlogger")
-    logging.addHandler(handler)
-    # logging = logging.LoggerAdapter(logging, logger_extra)
-    logging.info("Loki logger enabled", extra=logger_extra)
 
 # data type and rule check for config values
 
