@@ -5,7 +5,7 @@
 # Github: https://github.com/72itde/linux-remote-configuration-management
 # Developer: https://www.72it.de/#tab-contact
 #
-# Version: 0.6.1
+# Version: 0.7.0
 
 #
 # imports
@@ -32,8 +32,6 @@ import distro
 import random
 from time import sleep
 import logging.handlers
-import sys
-
 
 # We get it from distro.name(pretty=True)
 
