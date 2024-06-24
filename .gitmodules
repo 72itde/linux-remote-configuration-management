@@ -1,0 +1,3 @@
+[submodule "modules/python-logging-loki"]
+	path = modules/python-logging-loki
+	url = git@github.com:/GreyZmeem/python-logging-loki.git
