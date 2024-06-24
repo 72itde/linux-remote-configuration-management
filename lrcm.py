@@ -32,7 +32,10 @@ import distro
 import random
 from time import sleep
 import logging.handlers
+import sys
+sys.path.insert(0, './modules/python-logging-loki')
 import logging_loki
+
 
 
 # We get it from distro.name(pretty=True)
