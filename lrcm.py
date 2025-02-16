@@ -37,7 +37,9 @@ LINUX_DISTRIBUTIONS = [
     'Fedora Linux 39 (Workstation Edition)',
     'Debian GNU/Linux 12 (bookworm)',
     'Linux Mint 21.3',
-    'LMDE 6 (faye)'
+    'LMDE 6 (faye)',
+    'Ubuntu 24.04',
+    'elementary OS'
     ]
 PYTHON_VERSIONS = [
     '3.10.12',
@@ -66,6 +68,7 @@ def remove_pidfile_and_quit(PIDFILE):
 parser = OptionParser()
 parser.add_option("-c", "--configfile", dest="configfile", default="/etc/lrcm/lrcm.conf", help="custom config file")
 parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="run in debug mode")
+parser.add_option("-u", "--unmask-token", action="store_true", dest="unmasktoken", default=False, help="unmask token in debug mode")
 parser.add_option("-j", "--cronjobs", dest="cronjobs", default=True, help="manage cronjobs")
 
 (options, args) = parser.parse_args()
@@ -112,9 +115,13 @@ AUTHENTICATION_REQUIRED = boolean(config.get('GIT', 'authentication_required', f
 
 logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
 
-if (str(AUTHENTICATION_REQUIRED) == 'True'):
+if str(AUTHENTICATION_REQUIRED) == 'True':
     USERNAME = config.get('GIT', 'username')
-    TOKEN = config.get('GIT', 'token')
+    if str(options.unmasktoken) == "True":
+      TOKEN = config.get('GIT', 'token')
+    else:
+      TOKEN = "**********"
+
     o = urlparse(REPOSITORY)
     REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+TOKEN+"@"+o.netloc+"/"+o.path)
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
