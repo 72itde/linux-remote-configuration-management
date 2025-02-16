@@ -37,7 +37,7 @@ LINUX_DISTRIBUTIONS = [
     'Fedora Linux 39 (Workstation Edition)',
     'Debian GNU/Linux 12 (bookworm)',
     'Linux Mint 21.3',
-    'Distribution LMDE 6 (faye)'
+    'LMDE 6 (faye)'
     ]
 PYTHON_VERSIONS = [
     '3.10.12',
