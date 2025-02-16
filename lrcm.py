@@ -44,7 +44,8 @@ LINUX_DISTRIBUTIONS = [
 PYTHON_VERSIONS = [
     '3.10.12',
     '3.11.2',
-    '3.12.0'
+    '3.12.0',
+    '3.12.3'
 ]
 
 DISTRIBUTION_PRETTY = str(distro.name(pretty=True))
