@@ -39,7 +39,7 @@ LINUX_DISTRIBUTIONS = [
     'Linux Mint 21.3',
     'LMDE 6 (faye)',
     'Ubuntu 24.04',
-    'elementary OS'
+    'elementary OS 8'
     ]
 PYTHON_VERSIONS = [
     '3.10.12',
