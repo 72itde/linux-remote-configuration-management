@@ -97,15 +97,16 @@ logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
 
 if str(AUTHENTICATION_REQUIRED) == 'True':
     USERNAME = config.get('GIT', 'username')
+    TOKEN = config.get('GIT', 'token')
     if str(options.unmasktoken) == "True":
-      TOKEN = config.get('GIT', 'token')
+      MYTOKEN = TOKEN
     else:
-      TOKEN = "**********"
-
+      MYTOKEN = "**********"
     o = urlparse(REPOSITORY)
-    REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+TOKEN+"@"+o.netloc+"/"+o.path)
+    REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+MYTOKEN+"@"+o.netloc+"/"+o.path)
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
     log_memory_usage()
+    del MYTOKEN
 else:
     REPOSITORY_FULL_URL = REPOSITORY
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
