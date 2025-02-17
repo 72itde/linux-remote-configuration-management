@@ -1,5 +1,5 @@
 Package: lrcm
-Version: 0.7.0
+Version: 0.7.1
 Section: utils
 Priority: optional
 Architecture: all
@@ -8,4 +8,4 @@ Build-Depends: debhelper (>=10)
 Standards-Version: 4.0.0
 Depends: python3, python3-git, python3-ansible-runner, python3-validators, python3-psutil, python3-distro, cron
 Homepage: https://lrcm.72it.de
-Description: lrcm client for linux remote configuration management system.
+Description: lrcm client for linux remote configuration management system
