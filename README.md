@@ -56,11 +56,15 @@ and may work with other Python versions.
 
 ## Linux distribution and version compatibility
 
+- Debian Linux 12 Bookworm
+- Ubuntu Linux 24.04 Noble Numbat
+- elementary OS 8 Circle
+
 Currently this software is developed and tested on and for Debian Linux 12.
 
 It also works on Linux Mint 21.3 (because that's currently my favorite Linux Desktop distribution) and also on Fedora Linux 39, but not tested regularly.
 
-and may work on other Linux distributions. We plan to support Debian 11, Debian 12, Ubuntu 22.04, 24.04, Fedora 39, Rocky 9 and openSuSE.
+and may work on other Linux distributions.
 
 ## system requirements
 
@@ -72,11 +76,19 @@ and may work on other Linux distributions. We plan to support Debian 11, Debian 
 apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
 ```
 
-#### Fedora 39
+#### Ubuntu 24.04
 
 ```
-dnf -y install python3-GitPython python3-ansible-runner python3-psutil ansible python3-validators cronie && systemctl enable crond && systemctl restart crond
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
 ```
+
+
+# elementary OS 8
+
+```
+apt-get update && apt-get -y install python3 python3-git python3-ansible-runner python3-validators python3-psutil python3-distro cron && systemctl enable cron && systemctl restart cron
+```
+
 
 #### Linux Mint 21.3
 
@@ -91,15 +103,22 @@ You can find some Ansible playbooks for preparing clients in directory `/client-
 ### test with demo-repo
 
 ```
-cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch main && 
-cd linux-remote-configuration-management/ && ./lrcm.py --configfile=lrcm.conf.demo --debug --cronjobs=False
+cd /opt/ && git clone https://github.com/72itde/linux-remote-configuration-management.git --branch main && cd linux-remote-configuration-management/ && ./lrcm.py --configfile=lrcm.conf.template --debug --cronjobs=False
 ```
 
 ## installation
 
 ### Debian 12
 
-Use a .deb-package provided on https://lrcm.72it.de/
+Use the .deb-package provided in releases
+
+### Ubuntu 24.04
+
+Use the .deb-package provided in releases
+
+### elementary OS 8
+
+Use the .deb-package provided in releases
 
 ### Fedora 39
 
@@ -117,10 +136,9 @@ A token in Gitlab must have an expiration date that could lead to problems; you 
 
 ## Roadmap
 
-- May 2024: First stable version
-- July 2024: Build Packages for all supported Linux distributions
-- September 2024: Add a ping/"I'm still alive"-service
-- December 2024: Add a secure remote logging solution 
+- remote logging 
+- Remote status dashboard
+- code signing/verification
 
 ## commercial support
 
