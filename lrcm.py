@@ -58,7 +58,6 @@ def remove_pidfile_and_quit(PIDFILE):
 parser = OptionParser()
 parser.add_option("-c", "--configfile", dest="configfile", default="/etc/lrcm/lrcm.conf", help="custom config file")
 parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="run in debug mode")
-parser.add_option("-u", "--unmask-token", action="store_true", dest="unmasktoken", default=False, help="unmask token in debug mode")
 parser.add_option("-j", "--cronjobs", dest="cronjobs", default=True, help="manage cronjobs")
 
 (options, args) = parser.parse_args()
@@ -98,15 +97,9 @@ logging.debug("authentication required: "+str(AUTHENTICATION_REQUIRED))
 if str(AUTHENTICATION_REQUIRED) == 'True':
     USERNAME = config.get('GIT', 'username')
     TOKEN = config.get('GIT', 'token')
-    if str(options.unmasktoken) == "True":
-      MYTOKEN = TOKEN
-    else:
-      MYTOKEN = "**********"
     o = urlparse(REPOSITORY)
-    REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+MYTOKEN+"@"+o.netloc+"/"+o.path)
-    logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
+    REPOSITORY_FULL_URL = (o.scheme+"://"+USERNAME+":"+TOKEN+"@"+o.netloc+"/"+o.path)
     log_memory_usage()
-    del MYTOKEN
 else:
     REPOSITORY_FULL_URL = REPOSITORY
     logging.debug("full repository url: "+str(REPOSITORY_FULL_URL))
