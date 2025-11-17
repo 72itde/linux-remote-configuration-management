@@ -35,13 +35,15 @@ LINUX_DISTRIBUTIONS = [
     'Ubuntu 24.04.1 LTS',
     'elementary OS 8',
     'Ubuntu 24.04.2 LTS',
-    'Ubuntu 24.04.3 LTS'
+    'Ubuntu 24.04.3 LTS',
+    'openSUSE Tumbleweed'
     ]
 PYTHON_VERSIONS = [
     '3.10.12',
     '3.11.2',
     '3.12.0',
-    '3.12.3'
+    '3.12.3',
+    '3.13.9'
 ]
 
 DISTRIBUTION_PRETTY = str(distro.name(pretty=True))
