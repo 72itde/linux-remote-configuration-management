@@ -32,6 +32,7 @@ LINUX_DISTRIBUTIONS = [
     'Debian GNU/Linux 12 (bookworm)',
     'Linux Mint 21.3',
     'LMDE 6 (faye)',
+    'LMDE 7 (gigi)',
     'Ubuntu 24.04.1 LTS',
     'elementary OS 8',
     'Ubuntu 24.04.2 LTS',
@@ -44,6 +45,7 @@ PYTHON_VERSIONS = [
     '3.11.2',
     '3.12.0',
     '3.12.3',
+    '3.13.5',
     '3.13.9',
     '3.14.0'
 ]
