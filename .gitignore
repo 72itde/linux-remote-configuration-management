@@ -1,1 +1,17 @@
+# local runtime configuration (may contain a git token)
 lrcm.conf
+
+# runtime artefacts
+*.pid
+
+# build output
+/dist/
+
+# python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/

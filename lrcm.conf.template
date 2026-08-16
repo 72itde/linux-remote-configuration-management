@@ -1,22 +1,35 @@
 [GENERAL]
+# Fixed delay before lrcm starts working, in seconds.
 delay_before_start_seconds: 3
+# Additional random delay of 0..n seconds, to stagger a whole fleet of clients
+# so the git server does not see every machine in the same second. Set to 0 to
+# disable the random part.
 delay_before_start_random_max_seconds: 60
+# Upper bound for a single git transfer and for a single playbook run, in
+# seconds. Keeps a hung git server or a stuck task from holding the lock
+# forever and blocking every later run.
+timeout_seconds: 3600
+
 [GIT]
+# Repository holding the Ansible playbooks. http(s), ssh, git and file urls are
+# accepted; a username and token can only be used with http(s).
 repository: https://github.com/72itde/ansible-local-demo.git
 branch: main
 playbook: playbook.yaml
-authentication_required: False
-username: changeme
-token: changeme
-[CRONJOB]
-reboot_cronjob: False
-hourly_cronjob: False
-daily_cronjob: False
-[PIDFILE]
-pidfile: ./lrcm.pid
-[LOGGING]
-enabled: false
-url: changeme
+# Set to true and fill in username/token for private repositories. The token is
+# handed to git out of band (GIT_ASKPASS), so it never shows up in the process
+# list or in the cloned repository's .git/config.
 authentication_required: false
 username: changeme
-password: changeme
+token: changeme
+
+[CRONJOB]
+# Which cron entries lrcm should keep in /etc/cron.d. Entries set to false are
+# actively removed, so switching one off here uninstalls it on the next run.
+reboot_cronjob: false
+hourly_cronjob: false
+daily_cronjob: false
+
+[PIDFILE]
+# Advisory lock file that keeps two lrcm runs from overlapping.
+pidfile: /run/lrcm.pid
