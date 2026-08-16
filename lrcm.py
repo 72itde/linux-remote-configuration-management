@@ -124,7 +124,7 @@ TESTED_PYTHON_VERSIONS: Final[tuple[str, ...]] = (
     "3.12.3",  # Ubuntu 24.04, Linux Mint 22, elementary OS 8
     "3.13.5",  # Debian 13, LMDE 7
     "3.14.4",  # Ubuntu 26.04
-    "3.14.7",  # Fedora 43, Fedora 44
+    "3.14.6",  # Fedora 43, Fedora 44
 )
 
 # Compatibility is judged per minor series, not per patch level. Distributions

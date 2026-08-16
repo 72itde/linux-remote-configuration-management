@@ -48,10 +48,20 @@ install_package() {
     # Assert on what the package ships, not on what dpkg chose to unpack: the
     # Ubuntu images carry path-exclude=/usr/share/man/* in /etc/dpkg/dpkg.cfg.d,
     # so a man page that is present in the .deb never reaches the filesystem.
-    dpkg-deb --contents "${package}" | grep -q 'usr/share/man/man1/lrcm\.1\.gz' \
-        || fail "the package does not ship a manual page"
-    dpkg-deb --contents "${package}" | grep -q 'usr/share/lrcm/lrcm\.conf\.template' \
-        || fail "the package does not ship the config template"
+    #
+    # The listing is captured first rather than piped into grep: under
+    # `set -o pipefail`, grep -q exits at the first match and dpkg-deb dies of
+    # SIGPIPE, which would fail the whole script.
+    local contents
+    contents="$(dpkg-deb --contents "${package}")"
+    case "${contents}" in
+        *usr/share/man/man1/lrcm.1.gz*) ;;
+        *) fail "the package does not ship a manual page" ;;
+    esac
+    case "${contents}" in
+        *usr/share/lrcm/lrcm.conf.template*) ;;
+        *) fail "the package does not ship the config template" ;;
+    esac
 
     apt-get install -y -qq "${package}"
 

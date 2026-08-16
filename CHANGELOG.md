@@ -19,7 +19,7 @@ Ubuntu and Fedora release - each one actually exercised in CI.
   drift away from what is actually tested.
 - CI now also applies the matching `client-setup/` playbook inside every
   container, so those playbooks are verified rather than merely linted.
-- Python 3.14.7 (Fedora) added to the tested versions.
+- Python 3.14.6 (Fedora) added to the tested versions.
 
 ### changed
 
@@ -72,9 +72,13 @@ Ubuntu and Fedora release - each one actually exercised in CI.
 
 ### security
 
-- A redacting log filter now strips the git token from every record on the
-  logger itself, rather than at each call site. This closes the one sink that
-  was never covered: the playbook output lrcm passes through from ansible.
+- A redacting log filter now strips the git token from every record, installed
+  on the handlers rather than at each call site. A handler-level filter sees
+  everything that reaches the sink, which a logger-level one does not. This
+  closes the sink no call site covered: the playbook output passed through from
+  ansible.
+- The syslog handler is capped at info level, so `--debug --syslog` no longer
+  pushes every line of ansible output into the system log.
 
 ### packaging
 

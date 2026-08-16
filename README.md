@@ -22,7 +22,8 @@ Linux clients
 - using a secure way
 - in a reproducable way
 - standardized
-- very small memory and cpu footprint (currently below 35 MB)
+- very small memory and cpu footprint (the agent itself peaks around 33 MiB;
+  the ansible-playbook children it starts add roughly the same again)
 
 We had a first client - a bash-script - running for two years doing all the
 things we need, but the need for more features brought us here.
@@ -57,7 +58,7 @@ lrcm is a single python script. You can execute it manually or scheduled by cron
 
 ## installation
 
-### Debian 12, Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04 LTS, elementary OS 8
+### Debian, Ubuntu, Linux Mint, LMDE and elementary OS
 
 Download the `.deb` from [releases](https://github.com/72itde/linux-remote-configuration-management/releases)
 and install it:
@@ -71,10 +72,11 @@ a `/usr/bin/lrcm` entry point and creates `/etc/lrcm/lrcm.conf` from the shipped
 template on first install. Your configuration is never overwritten by an
 upgrade.
 
-### Fedora, Linux Mint, LMDE
+### Fedora
 
-No packages available yet, so use `git clone` and install the dependencies with
-the playbooks in [client-setup/](client-setup/).
+There is no `.rpm` yet, so use `git clone` and install the dependencies with the
+playbook in [client-setup/](client-setup/). CI exercises exactly this path on
+Fedora 43 and 44 on every push.
 
 ## configuration
 
@@ -191,8 +193,8 @@ so the column below cannot quietly become a lie.
 | Ubuntu 22.04 LTS (jammy jellyfish) | 3.10.12 | CI, from the `.deb` |
 | Ubuntu 24.04 LTS (noble numbat) | 3.12.3 | CI, from the `.deb` |
 | Ubuntu 26.04 LTS (resolute raccoon) | 3.14.4 | CI, from the `.deb` |
-| Fedora Linux 43 | 3.14.7 | CI, from the checkout |
-| Fedora Linux 44 | 3.14.7 | CI, from the checkout |
+| Fedora Linux 43 | 3.14.6 | CI, from the checkout |
+| Fedora Linux 44 | 3.14.6 | CI, from the checkout |
 | Linux Mint 21.3 (virginia) | 3.10.12 | rebuild of Ubuntu 22.04 |
 | Linux Mint 22 series (wilma … zena) | 3.12.3 | rebuild of Ubuntu 24.04 |
 | LMDE 6 (faye) | 3.11.2 | rebuild of Debian 12 |
