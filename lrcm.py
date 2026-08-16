@@ -32,6 +32,7 @@ LINUX_DISTRIBUTIONS = [
     'Debian GNU/Linux 12 (bookworm)',
     'Linux Mint 21.3',
     'LMDE 6 (faye)',
+    'LMDE 7 (gigi)',
     'Ubuntu 24.04.1 LTS',
     'elementary OS 8'
     ]
