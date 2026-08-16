@@ -820,6 +820,7 @@ def install_signal_handlers() -> None:
     """Turn SIGTERM/SIGINT into SystemExit so cleanup handlers still run."""
 
     def handler(signal_number: int, _frame: FrameType | None) -> None:
+        """Turn the signal into SystemExit so `finally` blocks get to run."""
         LOG.warning("received signal %d, shutting down", signal_number)
         raise SystemExit(EXIT_RUNTIME_ERROR)
 
