@@ -42,6 +42,12 @@ trap cleanup EXIT
 # package, so give it the mode the filesystem root actually has.
 chmod 0755 "${STAGING}"
 
+if [ -n "${SOURCE_DATE_EPOCH:-}" ]; then
+    MAN_DATE="$(date -u -d "@${SOURCE_DATE_EPOCH}" +%Y-%m-%d)"
+else
+    MAN_DATE="$(date +%Y-%m-%d)"
+fi
+
 echo "building lrcm ${VERSION} (deb version ${DEB_VERSION})"
 
 # --- payload ---------------------------------------------------------------
@@ -65,7 +71,11 @@ install -d -m 0755 "${STAGING}/usr/bin"
 ln -s /opt/lrcm/lrcm.py "${STAGING}/usr/bin/lrcm"
 
 install -d -m 0755 "${STAGING}/usr/share/man/man1"
-gzip -9 -n -c "${SCRIPT_DIR}/lrcm.1" > "${STAGING}/usr/share/man/man1/lrcm.1.gz"
+# The man page carries the version in its .TH line; substitute rather than
+# hand-edit, so it cannot drift from VERSION the way the old package did.
+sed -e "s|@VERSION@|${VERSION}|g" -e "s|@DATE@|${MAN_DATE}|g" \
+    "${SCRIPT_DIR}/lrcm.1" \
+    | gzip -9 -n -c > "${STAGING}/usr/share/man/man1/lrcm.1.gz"
 chmod 0644 "${STAGING}/usr/share/man/man1/lrcm.1.gz"
 
 install -d -m 0755 "${STAGING}/usr/share/doc/lrcm"
