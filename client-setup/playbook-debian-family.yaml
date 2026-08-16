@@ -31,3 +31,7 @@
         name: cron
         state: started
         enabled: true
+      # Tagged so image builds and container tests can skip it: there is no
+      # running init system to talk to until the image is actually booted.
+      tags:
+        - service

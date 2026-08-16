@@ -8,7 +8,7 @@ Github: https://github.com/72itde/linux-remote-configuration-management
 Contact: https://www.72it.de/#tab-contact
 """
 
-from __future__ import annotations
+__version__ = "0.9.0"
 
 import argparse
 import configparser
@@ -19,6 +19,7 @@ import logging.handlers
 import os
 import random
 import resource
+import shlex
 import shutil
 import signal
 import sys
@@ -38,8 +39,6 @@ import distro
 import git
 import validators
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
-
-__version__ = "0.9.0"
 
 LOG: Final = logging.getLogger("lrcm")
 
@@ -154,7 +153,7 @@ class ConfigurationError(Exception):
     """The configuration or the runtime environment is unusable."""
 
 
-class RuntimeFailure(Exception):
+class StepFailedError(Exception):
     """A step failed while lrcm was doing its actual work."""
 
 
@@ -265,12 +264,49 @@ class TimestampFormatter(logging.Formatter):
     from a fleet of machines in different timezones cannot be ordered.
     """
 
-    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+    def formatTime(  # noqa: N802 - overrides logging.Formatter, the name is fixed
+        self, record: logging.LogRecord, datefmt: str | None = None
+    ) -> str:
         """Return ``record``'s creation time as ``2026-08-16T09:12:34.567+02:00``."""
         moment = datetime.fromtimestamp(record.created).astimezone()
         if datefmt:
             return moment.strftime(datefmt)
         return moment.isoformat(timespec="milliseconds")
+
+
+class SecretRedactingFilter(logging.Filter):
+    """Strip known secrets out of every record, whatever produced it.
+
+    Redacting at each call site only protects the call sites somebody
+    remembered. A filter on the logger covers all of them at once - including
+    the playbook output lrcm passes through from ansible, which is the one
+    stream lrcm does not write itself. See the Python Logging Cookbook,
+    "Using Filters to impart contextual information".
+    """
+
+    def __init__(self, *secrets_to_hide: str) -> None:
+        """Remember the secrets that must never reach a handler."""
+        super().__init__()
+        self._secrets = tuple(secret for secret in secrets_to_hide if secret)
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Redact ``record`` in place and keep it."""
+        if not self._secrets:
+            return True
+        if isinstance(record.msg, str):
+            record.msg = redact(record.msg, *self._secrets)
+        # %-formatting is lazy, so the secret may still be sitting in args.
+        if isinstance(record.args, tuple):
+            record.args = tuple(
+                redact(argument, *self._secrets) if isinstance(argument, str) else argument
+                for argument in record.args
+            )
+        elif isinstance(record.args, dict):
+            record.args = {
+                key: redact(value, *self._secrets) if isinstance(value, str) else value
+                for key, value in record.args.items()
+            }
+        return True
 
 
 def log_level(*, debug: bool, verbose: bool) -> int:
@@ -326,7 +362,7 @@ def log_memory_usage() -> None:
     own_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     children_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     LOG.debug(
-        "memory usage: %.3fMB (self %.3fMB, children %.3fMB)",
+        "peak memory: %.3fMiB (self %.3fMiB, children %.3fMiB)",
         (own_kb + children_kb) / 1024,
         own_kb / 1024,
         children_kb / 1024,
@@ -627,7 +663,7 @@ def clone_repository(config: Config, target: Path) -> None:
         except git.GitError as error:
             # git echoes the url back in its error messages; make sure a token
             # that ended up there anyway never reaches the log.
-            raise RuntimeFailure(
+            raise StepFailedError(
                 f"cloning the repository failed: {redact(str(error), config.token)}"
             ) from None
 
@@ -685,7 +721,7 @@ def run_playbook(private_data_dir: Path, playbook: str, timeout_seconds: int) ->
     log_memory_usage()
 
     if status != "successful" or return_code != 0:
-        raise RuntimeFailure(f"playbook {playbook} failed with status {status} (rc {return_code})")
+        raise StepFailedError(f"playbook {playbook} failed with status {status} (rc {return_code})")
 
 
 def render_cronjob_playbook(
@@ -725,7 +761,10 @@ def manage_cronjobs(config: Config, private_data_dir: Path, configfile: Path) ->
     # us the real location, next to which the templates directory lives.
     script_path = Path(__file__).resolve()
     template_directory = script_path.parent / "templates"
-    job = f"{script_path} --configfile={configfile.resolve()}"
+    # cron hands this line to /bin/sh, so both paths have to survive as single
+    # words. A config path containing a space would otherwise install a broken
+    # root cron entry, and one containing ';' would append a second command.
+    job = f"{shlex.quote(str(script_path))} --configfile={shlex.quote(str(configfile.resolve()))}"
     LOG.info("managing cronjobs for %s", script_path)
 
     for special_time in CRONJOB_SPECIAL_TIMES:
@@ -753,11 +792,9 @@ def start_delay(config: Config) -> None:
     The random part staggers a whole fleet so that a git server does not see
     every client at the same second.
     """
-    jitter = (
-        random.randrange(config.delay_before_start_random_max_seconds)  # noqa: S311
-        if config.delay_before_start_random_max_seconds > 0
-        else 0
-    )
+    # randint is inclusive at both ends, which is what "0..n seconds" in the
+    # configuration template promises; randrange would top out at n-1.
+    jitter = random.randint(0, config.delay_before_start_random_max_seconds)  # noqa: S311
     delay = config.delay_before_start_seconds + jitter
     LOG.info("delaying start by %d seconds", delay)
     if delay:
@@ -784,7 +821,7 @@ def apply_configuration(config: Config, arguments: argparse.Namespace) -> None:
         clone_repository(config, checkout)
 
         if not (checkout / config.playbook).is_file():
-            raise RuntimeFailure(f"playbook {config.playbook} not found in the repository")
+            raise StepFailedError(f"playbook {config.playbook} not found in the repository")
         run_playbook(workdir, config.playbook, config.timeout_seconds)
 
         hostname = os.uname().nodename
@@ -805,7 +842,7 @@ def apply_configuration(config: Config, arguments: argparse.Namespace) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Entry point. Returns the process exit code."""
+    """Run lrcm and return the process exit code."""
     arguments = build_argument_parser().parse_args(argv)
     configure_logging(
         level=log_level(debug=arguments.debug, verbose=arguments.verbose),
@@ -819,6 +856,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         check_distribution()
         check_python_version()
         config = read_config(arguments.configfile)
+        LOG.addFilter(SecretRedactingFilter(config.token))
 
         with pidfile_lock(config.pidfile) as acquired:
             if not acquired:
@@ -830,9 +868,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         LOG.error("%s", error)
         LOG.debug("configuration error detail", exc_info=True)
         return EXIT_CONFIGURATION_ERROR
-    except RuntimeFailure as error:
+    except StepFailedError as error:
         LOG.error("%s", error)
         LOG.debug("runtime failure detail", exc_info=True)
+        return EXIT_RUNTIME_ERROR
+    except Exception:
+        # Without this an unexpected fault - a missing templates/ directory, an
+        # OSError from the filesystem - would print a traceback and exit with
+        # CPython's default status of 1, which this program documents as
+        # "configuration error". Monitoring could not tell a bad config from a
+        # crash, and the traceback would bypass the redacting filter.
+        LOG.exception("unexpected error")
         return EXIT_RUNTIME_ERROR
 
     log_memory_usage()

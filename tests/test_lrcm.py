@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import argparse
+import logging
 import multiprocessing
 import os
+import re
+import shlex
 import sys
 import textwrap
 from multiprocessing.synchronize import Event
@@ -12,6 +16,7 @@ from pathlib import Path
 import git
 import pytest
 import yaml
+from jinja2 import UndefinedError
 
 import lrcm
 
@@ -179,7 +184,7 @@ def test_parse_bool_false(value: str) -> None:
 
 
 def test_parse_bool_rejects_garbage() -> None:
-    with pytest.raises(Exception, match="boolean"):
+    with pytest.raises(argparse.ArgumentTypeError, match="boolean"):
         lrcm.parse_bool("maybe")
 
 
@@ -276,7 +281,7 @@ def test_git_environment_always_bounds_a_stalled_transfer(token: str) -> None:
 def test_clone_target_is_empty_when_git_is_invoked(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """git refuses to clone into a non-empty directory.
+    """Git refuses to clone into a non-empty directory.
 
     The askpass helper therefore must not be written into the clone target -
     an earlier revision did exactly that and broke every authenticated clone.
@@ -409,7 +414,7 @@ def test_read_config_rejects_a_missing_repository(tmp_path: Path) -> None:
     ],
 )
 def test_read_config_rejects_negative_delays(tmp_path: Path, override: str, message: str) -> None:
-    key = override.split(":")[0]
+    key = override.split(":", maxsplit=1)[0]
     content = "\n".join(
         override if line.startswith(key) else line for line in MINIMAL_CONFIG.splitlines()
     )
@@ -545,14 +550,20 @@ def test_pidfile_lock_refuses_to_follow_a_symlink(tmp_path: Path) -> None:
     pidfile = tmp_path / "lrcm.pid"
     pidfile.symlink_to(target)
 
-    with pytest.raises(lrcm.ConfigurationError, match="cannot open pidfile"):
-        lrcm.pidfile_lock(pidfile).__enter__()
+    with (
+        pytest.raises(lrcm.ConfigurationError, match="cannot open pidfile"),
+        lrcm.pidfile_lock(pidfile),
+    ):
+        pass
     assert target.read_text(encoding="ascii") == "important\n"
 
 
 def test_pidfile_lock_rejects_an_unwritable_directory(tmp_path: Path) -> None:
-    with pytest.raises(lrcm.ConfigurationError, match="not writable"):
-        lrcm.pidfile_lock(tmp_path / "missing" / "lrcm.pid").__enter__()
+    with (
+        pytest.raises(lrcm.ConfigurationError, match="not writable"),
+        lrcm.pidfile_lock(tmp_path / "missing" / "lrcm.pid"),
+    ):
+        pass
 
 
 # --------------------------------------------------------------------------- #
@@ -621,12 +632,108 @@ def test_rendered_cronjob_playbook_names_every_play_and_task(tmp_path: Path) -> 
         assert task["name"][0].isupper()
 
 
-def test_render_fails_loudly_on_an_unknown_variable() -> None:
+def test_render_fails_loudly_on_an_unknown_variable(tmp_path: Path) -> None:
     """StrictUndefined keeps a renamed variable from silently producing junk."""
-    from jinja2 import Environment, StrictUndefined, UndefinedError
-
-    template = Environment(undefined=StrictUndefined, autoescape=False).from_string(  # noqa: S701
-        "{{ does_not_exist }}"
+    template_directory = tmp_path / "templates"
+    template_directory.mkdir()
+    (template_directory / "cronjob.yaml.j2").write_text(
+        "- name: {{ cronjob_special_time }} {{ variable_that_was_renamed }}\n", encoding="utf-8"
     )
     with pytest.raises(UndefinedError):
-        template.render()
+        lrcm.render_cronjob_playbook(
+            template_directory=template_directory,
+            output_path=tmp_path / "out.yaml",
+            special_time="hourly",
+            job="/opt/lrcm/lrcm.py",
+            enabled=True,
+        )
+
+
+# --------------------------------------------------------------------------- #
+# logging
+# --------------------------------------------------------------------------- #
+
+
+def test_log_records_carry_an_rfc_3339_timestamp() -> None:
+    """A fleet spread over timezones cannot be ordered without the offset."""
+    record = logging.LogRecord("lrcm", logging.INFO, __file__, 1, "hello", None, None)
+    formatted = lrcm.TimestampFormatter("%(asctime)s %(levelname)-8s %(message)s").format(record)
+    assert re.match(
+        r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} INFO {5}hello$",
+        formatted,
+    ), formatted
+
+
+def test_configure_logging_is_idempotent() -> None:
+    """Calling it twice must not make every line appear twice."""
+    try:
+        lrcm.configure_logging(level=logging.INFO, use_syslog=False)
+        lrcm.configure_logging(level=logging.INFO, use_syslog=False)
+        assert len(lrcm.LOG.handlers) == 1
+    finally:
+        for handler in list(lrcm.LOG.handlers):
+            lrcm.LOG.removeHandler(handler)
+
+
+@pytest.mark.parametrize(
+    ("debug", "verbose", "expected"),
+    [
+        (False, False, logging.WARNING),
+        (False, True, logging.INFO),
+        (True, False, logging.DEBUG),
+        (True, True, logging.DEBUG),
+    ],
+)
+def test_log_level(debug: bool, verbose: bool, expected: int) -> None:
+    assert lrcm.log_level(debug=debug, verbose=verbose) == expected
+
+
+def test_the_redacting_filter_hides_the_token_in_message_and_args() -> None:
+    """The ansible pass-through is the sink no call site can protect."""
+    log_filter = lrcm.SecretRedactingFilter("s3cr3t")
+    record = logging.LogRecord(
+        "lrcm", logging.INFO, __file__, 1, "ansible | %s and s3cr3t", ("saw s3cr3t",), None
+    )
+    assert log_filter.filter(record) is True
+    assert "s3cr3t" not in record.getMessage()
+    assert "***" in record.getMessage()
+
+
+def test_the_redacting_filter_is_a_noop_without_secrets() -> None:
+    log_filter = lrcm.SecretRedactingFilter("")
+    record = logging.LogRecord("lrcm", logging.INFO, __file__, 1, "plain %s", ("text",), None)
+    assert log_filter.filter(record) is True
+    assert record.getMessage() == "plain text"
+
+
+# --------------------------------------------------------------------------- #
+# cron command line
+# --------------------------------------------------------------------------- #
+
+
+def test_cron_job_line_quotes_paths_for_the_shell(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cron runs the job through /bin/sh, so both paths must stay single words."""
+    hostile = tmp_path / "weird dir; touch pwned"
+    hostile.mkdir()
+    configfile = hostile / "lrcm.conf"
+    configfile.write_text(MINIMAL_CONFIG, encoding="utf-8")
+
+    captured: list[str] = []
+    monkeypatch.setattr(lrcm, "run_playbook", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        lrcm,
+        "render_cronjob_playbook",
+        lambda **kwargs: captured.append(str(kwargs["job"])),
+    )
+    config = lrcm.read_config(configfile)
+    lrcm.manage_cronjobs(config, tmp_path, configfile)
+
+    assert captured
+    for job in captured:
+        # shlex.split is what /bin/sh word-splitting amounts to here
+        words = shlex.split(job)
+        assert len(words) == 2, job
+        assert words[1] == f"--configfile={configfile.resolve()}"
+        assert ";" not in words[0]

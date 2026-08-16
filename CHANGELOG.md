@@ -46,11 +46,73 @@ Ubuntu and Fedora release - each one actually exercised in CI.
   later ship dnf5, whose bindings are installed by default, while
   `ansible.builtin.dnf` needs the dnf4 bindings such a system no longer has.
 
+### fixed
+
+- **The generated cron command was never shell-quoted.** `--configfile` is
+  operator-supplied and lands verbatim in `/etc/cron.d/lrcm_*`, which cron
+  hands to `/bin/sh`; a config path containing a space installed a permanently
+  broken root cron entry, and one containing `;` appended a second command.
+  Both paths now go through `shlex.quote`.
+- **A pre-release version sorted above the final release.** SemVer says
+  `1.0.0-rc.1` precedes `1.0.0`; dpkg said the opposite, because `-` starts the
+  Debian revision. The build now converts it to `1.0.0~rc.1`, which sorts
+  correctly, so release-candidate machines will accept the final release
+  instead of treating it as a downgrade. The release workflow's pre-release
+  detection also matched only `-rc`, so `-beta` or `-alpha` tags were published
+  as stable.
+- An unexpected exception exited with status 1, which this program documents as
+  "configuration error", and bypassed logging entirely. It is now reported as a
+  runtime failure through the logger.
+- The random start delay could never reach the configured maximum, because
+  `randrange` excludes its upper bound while the option is documented as
+  `0..n`.
+- `tests/check-version-consistency.sh` piped `sed` into `head` under
+  `set -o pipefail`, which can abort on SIGPIPE, and is now portable POSIX awk
+  rather than relying on gawk extensions.
+
+### security
+
+- A redacting log filter now strips the git token from every record on the
+  logger itself, rather than at each call site. This closes the one sink that
+  was never covered: the playbook output lrcm passes through from ansible.
+
+### packaging
+
+- The `.deb` now passes `lintian --fail-on error,warning`, and CI enforces it.
+  Two tags are overridden with written justification: `dir-or-file-in-opt`
+  (FHS 3.0 §3.13 reserves `/opt` for exactly this kind of add-on package;
+  Debian Policy forbids it only for packages *in the archive*) and the `0700`
+  mode on `/etc/lrcm`, which is deliberate because the directory holds a token.
+- `/usr/share/doc/lrcm/changelog.gz` is a proper Debian-format changelog as
+  Policy 12.7 requires; the markdown one ships beside it as `changelog.md.gz`.
+- Added a manual page, `lrcm(1)`, which Policy 12.1 expects for a program in
+  `/usr/bin`.
+- The configuration template moved from `/etc/lrcm/lrcm.conf.template` to
+  `/usr/share/lrcm/lrcm.conf.template`. A file in `/etc` that dpkg does not
+  know as a conffile violates Policy 10.7; `postinst` seeds
+  `/etc/lrcm/lrcm.conf` from the new location exactly as before.
+- `Depends` is a single line, and the description synopsis capitalises Linux.
+
 ### removed
 
 - **Fedora 39** is no longer listed. It reached end of life in May 2024 and its
   packages are gone from the mirrors, so the entry promised something that
   could not work.
+
+### repository
+
+- A `Makefile` is now the single entry point: `make check` runs exactly what CI
+  runs, so the README can stop listing six commands that drifted out of step
+  with the pipeline.
+- Added `SECURITY.md` with a private disclosure channel and, more usefully, a
+  written statement of what lrcm assumes about its environment - notably that
+  write access to the playbook repository is root access to the fleet.
+- ruff now enforces pydocstyle (PEP 257), pep8-naming (PEP 8, including the
+  `Error` suffix rule that renamed `RuntimeFailure` to `StepFailedError`),
+  blind-except and pylint rules. `from __future__ import annotations` is gone,
+  since PEP 604 unions are native in the Python 3.10 this project requires, and
+  `__version__` sits where PEP 8 puts module dunders.
+- The licence is declared as an SPDX expression per PEP 639.
 
 ## 0.8.0
 

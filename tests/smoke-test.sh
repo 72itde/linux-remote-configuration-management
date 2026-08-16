@@ -51,6 +51,10 @@ install_package() {
     [ -f /opt/lrcm/templates/cronjob.yaml.j2 ] || fail "the cronjob template is missing"
     [ -L /usr/bin/lrcm ] || fail "/usr/bin/lrcm symlink is missing"
     [ -f /etc/lrcm/lrcm.conf ] || fail "postinst did not seed /etc/lrcm/lrcm.conf"
+    [ -f /usr/share/lrcm/lrcm.conf.template ] || fail "the config template is missing"
+    # Policy 10.7: nothing may sit in /etc that dpkg does not know as a conffile
+    [ ! -e /etc/lrcm/lrcm.conf.template ] || fail "the template must not be in /etc"
+    [ -f /usr/share/man/man1/lrcm.1.gz ] || fail "the manual page is missing"
 
     local mode
     mode="$(stat -c '%a %U:%G' /etc/lrcm/lrcm.conf)"
@@ -196,8 +200,11 @@ sed -i 's/^hourly_cronjob: true$/hourly_cronjob: false/' "${CONFIG}"
 
 # --- the client preparation playbook this distribution ships ---------------
 
+# --skip-tags service: a container has no running init system, so the systemd
+# task cannot succeed here. Everything else - the module names resolving on
+# this distribution, and every package existing - is exercised for real.
 log "applying ${CLIENT_SETUP##*/}"
-ansible-playbook -i 127.0.0.1, -c local "${CLIENT_SETUP}"
+ansible-playbook -i 127.0.0.1, -c local --skip-tags service "${CLIENT_SETUP}"
 
 # --- failure behaviour -----------------------------------------------------
 

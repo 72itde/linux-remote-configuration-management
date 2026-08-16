@@ -11,7 +11,12 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 version_file="$(tr -d '[:space:]' < "${REPO_ROOT}/VERSION")"
 version_code="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${REPO_ROOT}/lrcm.py")"
-version_changelog="$(sed -n 's/^## \([0-9].*\)$/\1/p' "${REPO_ROOT}/CHANGELOG.md" | head -n 1)"
+# awk rather than `sed | head`: under `set -o pipefail` head exiting early
+# sends SIGPIPE to sed, which would abort the script with status 141.
+# Kept to POSIX awk - Debian and Ubuntu default to mawk, which has no gawk
+# extensions such as the three-argument match().
+version_changelog="$(awk '/^## [0-9]/ { sub(/^## /, ""); print; exit }' \
+    "${REPO_ROOT}/CHANGELOG.md")"
 
 status=0
 

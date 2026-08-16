@@ -244,24 +244,30 @@ sudo ./lrcm.py --configfile=lrcm.conf.template --debug --no-cronjobs --no-delay
 ### development
 
 ```sh
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
+make venv          # .venv with the runtime and development dependencies
+. .venv/bin/activate
 
-ruff check . && ruff format --check .   # style
-mypy                                    # types
-pytest                                  # unit tests
-ansible-lint --profile production       # ansible content
-./tests/check-version-consistency.sh    # VERSION == lrcm.py == CHANGELOG.md
+make check         # everything CI checks, except the container matrix
+make format        # rewrite the code to the project style
+make help          # list every target
 ```
+
+`make check` runs ruff, mypy, pytest, ansible-lint's production profile,
+yamllint, shellcheck and the version-consistency check - the same set, in the
+same order, as the CI workflow. If it passes locally, CI passes too.
 
 ### building the package
 
 ```sh
-./packaging/debian/build-deb.sh          # writes dist/lrcm_<version>_all.deb
+make build         # writes dist/lrcm_<version>_all.deb
+make lintian       # checks that package against Debian policy
+make smoke         # installs it in a Debian 13 container and drives a full run
 ```
 
 The staging tree is assembled from scratch in a temporary directory, so no
-repository file can leak into the package.
+repository file can leak into the package. `make lintian` must come back clean:
+CI fails on any lintian error or warning that is not listed, with a reason, in
+[packaging/debian/lintian-overrides](packaging/debian/lintian-overrides).
 
 ## releasing
 

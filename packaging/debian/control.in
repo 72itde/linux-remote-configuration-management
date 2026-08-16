@@ -5,16 +5,9 @@ Priority: optional
 Architecture: all
 Maintainer: Florian Gusinde <florian.gusinde@72it.de>
 Installed-Size: @INSTALLED_SIZE@
-Depends: python3 (>= 3.10),
- python3-git,
- python3-ansible-runner,
- python3-jinja2,
- python3-validators,
- python3-distro,
- git,
- cron | cron-daemon
+Depends: python3 (>= 3.10), python3-git, python3-ansible-runner, python3-jinja2, python3-validators, python3-distro, git, cron | cron-daemon
 Homepage: https://lrcm.72it.de
-Description: agent for linux remote configuration management
+Description: agent for Linux remote configuration management
  lrcm clones a git repository containing Ansible playbooks and applies them to
  the local machine. It targets Linux clients that cannot be reached from a
  central management infrastructure: remote schools and universities, IoT

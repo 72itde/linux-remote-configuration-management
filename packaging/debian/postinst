@@ -4,7 +4,7 @@ set -e
 
 CONFIG_DIR=/etc/lrcm
 CONFIG_FILE="${CONFIG_DIR}/lrcm.conf"
-CONFIG_TEMPLATE="${CONFIG_DIR}/lrcm.conf.template"
+CONFIG_TEMPLATE=/usr/share/lrcm/lrcm.conf.template
 
 case "$1" in
     configure)
@@ -24,10 +24,6 @@ case "$1" in
         if [ -e "${CONFIG_FILE}" ]; then
             chown root:root "${CONFIG_FILE}"
             chmod 0600 "${CONFIG_FILE}"
-        fi
-        if [ -e "${CONFIG_TEMPLATE}" ]; then
-            chown root:root "${CONFIG_TEMPLATE}"
-            chmod 0600 "${CONFIG_TEMPLATE}"
         fi
         ;;
 

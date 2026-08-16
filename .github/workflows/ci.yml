@@ -122,6 +122,14 @@ jobs:
             dpkg-deb --contents dist/*.deb
             exit 1
           fi
+      - name: lintian
+        # lintian is the reference conformance checker for Debian Policy; the
+        # project lints its shell, YAML and Ansible, so the package it actually
+        # ships should not be the one artefact nothing checks.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lintian
+          lintian --no-tag-display-limit --fail-on error,warning dist/*.deb
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: lrcm-deb
