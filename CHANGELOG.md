@@ -1,5 +1,57 @@
 # changelog
 
+## 0.9.0
+
+Reworked logging, and widened the supported platforms to every current Debian,
+Ubuntu and Fedora release - each one actually exercised in CI.
+
+### added
+
+- **Ubuntu 22.04 LTS**, **Fedora 43** and **Fedora 44** are now supported, and
+  Linux Mint's 22 series (22, 22.1, 22.2, 22.3, …) matches as a whole.
+- Fedora is verified in CI by running lrcm straight from the checkout, since
+  there is no `.rpm` yet. The CI matrix now covers seven containers: Debian
+  12/13, Ubuntu 22.04/24.04/26.04 from the built `.deb`, plus Fedora 43/44 from
+  source.
+- Each supported distribution records either the container image CI proves it
+  in, or the distribution it is a rebuild of. A unit test fails if that table
+  ever disagrees with `.github/workflows/ci.yml`, so the support claim cannot
+  drift away from what is actually tested.
+- CI now also applies the matching `client-setup/` playbook inside every
+  container, so those playbooks are verified rather than merely linted.
+- Python 3.14.7 (Fedora) added to the tested versions.
+
+### changed
+
+- **Log records now carry a date and time.** The format is RFC 3339 with the
+  local UTC offset and milliseconds - `2026-08-16T09:12:34.567+02:00` - because
+  `logging`'s own `%(asctime)s` emits neither the `T` separator nor any
+  timezone, and lines from machines in different timezones cannot be ordered
+  without one. Level names are padded so messages line up.
+- **Diagnostics moved from stdout to stderr**, which is where the Unix
+  convention and `logging`'s own default put them. lrcm writes nothing to
+  stdout. Anything redirecting `lrcm >file` should redirect `2>` instead.
+- **Ansible's output is now logged at debug level**, one record per line, with
+  blank separator lines dropped. It previously came out at info level, so `-v`
+  drowned lrcm's own progress in ansible chatter and printed timestamped empty
+  records - and it contradicted `--debug`'s documented "including ansible
+  output".
+- `--syslog` now uses the `daemon` facility and deliberately omits the
+  timestamp, since syslog and journald add their own.
+- `configure_logging()` clears existing handlers, so calling it twice no longer
+  duplicates every line.
+- The "distribution is supported" message says how that support was verified
+  instead of repeating the distribution name twice.
+- The Fedora client-setup playbook uses `ansible.builtin.dnf5`. Fedora 41 and
+  later ship dnf5, whose bindings are installed by default, while
+  `ansible.builtin.dnf` needs the dnf4 bindings such a system no longer has.
+
+### removed
+
+- **Fedora 39** is no longer listed. It reached end of life in May 2024 and its
+  packages are gone from the mirrors, so the entry promised something that
+  could not work.
+
 ## 0.8.0
 
 Added support for Debian 13, every Ubuntu 24.04 point release and Ubuntu 26.04,

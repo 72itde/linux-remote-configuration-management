@@ -27,6 +27,7 @@ import urllib.parse
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from time import sleep
 from types import FrameType
@@ -38,7 +39,7 @@ import git
 import validators
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 LOG: Final = logging.getLogger("lrcm")
 
@@ -49,45 +50,82 @@ EXIT_RUNTIME_ERROR: Final = 2
 
 @dataclass(frozen=True)
 class SupportedDistribution:
-    """A distribution lrcm is developed and tested on.
+    """A distribution lrcm runs on.
 
     ``version`` is matched as a dotted prefix of what ``distro.version()``
     reports, so a single entry covers every point release: ``24.04`` matches
     ``24.04``, ``24.04.1`` and ``24.04.7`` alike.
+
+    ``ci_image`` names the container CI installs and exercises lrcm in. An
+    entry that has one is proven on every push; an entry without one has no
+    usable public container image and rests on the fact that it is a rebuild
+    of a distribution that does - which ``derived_from`` records.
     """
 
     distro_id: str
     version: str
     label: str
+    ci_image: str | None = None
+    derived_from: str | None = None
+
+    @property
+    def verified_in_ci(self) -> bool:
+        """Whether CI installs and runs lrcm on this distribution."""
+        return self.ci_image is not None
 
 
 # Matching is done on distro.id()/distro.version() rather than on the pretty
 # name, because the pretty name changes with every point release ("Ubuntu
 # 24.04.1 LTS" -> "Ubuntu 24.04.2 LTS") and previously broke support after
 # every upgrade.
+#
+# tests/test_lrcm.py asserts that every ci_image below really appears in
+# .github/workflows/ci.yml, so this table cannot claim coverage CI does not
+# actually provide.
 SUPPORTED_DISTRIBUTIONS: Final[tuple[SupportedDistribution, ...]] = (
-    SupportedDistribution("debian", "12", "Debian GNU/Linux 12 (bookworm)"),
-    SupportedDistribution("debian", "13", "Debian GNU/Linux 13 (trixie)"),
-    SupportedDistribution("ubuntu", "24.04", "Ubuntu 24.04 LTS (noble numbat)"),
-    SupportedDistribution("ubuntu", "26.04", "Ubuntu 26.04 LTS (resolute raccoon)"),
-    SupportedDistribution("linuxmint", "6", "LMDE 6 (faye)"),
-    SupportedDistribution("linuxmint", "7", "LMDE 7 (gigi)"),
-    SupportedDistribution("linuxmint", "21.3", "Linux Mint 21.3"),
-    SupportedDistribution("elementary", "8", "elementary OS 8"),
-    SupportedDistribution("fedora", "39", "Fedora Linux 39"),
+    # Debian family, installed from the .deb this repository builds
+    SupportedDistribution("debian", "12", "Debian GNU/Linux 12 (bookworm)", ci_image="debian:12"),
+    SupportedDistribution("debian", "13", "Debian GNU/Linux 13 (trixie)", ci_image="debian:13"),
+    SupportedDistribution(
+        "ubuntu", "22.04", "Ubuntu 22.04 LTS (jammy jellyfish)", ci_image="ubuntu:22.04"
+    ),
+    SupportedDistribution(
+        "ubuntu", "24.04", "Ubuntu 24.04 LTS (noble numbat)", ci_image="ubuntu:24.04"
+    ),
+    SupportedDistribution(
+        "ubuntu", "26.04", "Ubuntu 26.04 LTS (resolute raccoon)", ci_image="ubuntu:26.04"
+    ),
+    # Fedora, installed from the git checkout - there is no .rpm yet
+    SupportedDistribution("fedora", "43", "Fedora Linux 43", ci_image="fedora:43"),
+    SupportedDistribution("fedora", "44", "Fedora Linux 44", ci_image="fedora:44"),
+    # Rebuilds with no public container image of their own. Each is the
+    # distribution named in derived_from with a different desktop on top, so
+    # the CI run for that base covers the parts lrcm touches.
+    SupportedDistribution(
+        "linuxmint", "21.3", "Linux Mint 21.3 (virginia)", derived_from="ubuntu 22.04"
+    ),
+    SupportedDistribution(
+        "linuxmint", "22", "Linux Mint 22 (wilma..zena)", derived_from="ubuntu 24.04"
+    ),
+    SupportedDistribution("linuxmint", "6", "LMDE 6 (faye)", derived_from="debian 12"),
+    SupportedDistribution("linuxmint", "7", "LMDE 7 (gigi)", derived_from="debian 13"),
+    SupportedDistribution(
+        "elementary", "8", "elementary OS 8 (circe)", derived_from="ubuntu 24.04"
+    ),
 )
 
 # Hard floor. Below this the interpreter cannot run this script at all.
 MINIMUM_PYTHON_VERSION: Final[tuple[int, int]] = (3, 10)
 
-# Versions this release was actually exercised against.
+# Versions this release was actually exercised against. The ones with a
+# distribution named next to them are run in CI on every push.
 TESTED_PYTHON_VERSIONS: Final[tuple[str, ...]] = (
-    "3.10.12",  # Linux Mint 21.3
+    "3.10.12",  # Ubuntu 22.04, Linux Mint 21.3
     "3.11.2",  # Debian 12, LMDE 6
-    "3.12.0",
-    "3.12.3",  # Ubuntu 24.04, elementary OS 8
+    "3.12.3",  # Ubuntu 24.04, Linux Mint 22, elementary OS 8
     "3.13.5",  # Debian 13, LMDE 7
     "3.14.4",  # Ubuntu 26.04
+    "3.14.7",  # Fedora 43, Fedora 44
 )
 
 # Compatibility is judged per minor series, not per patch level. Distributions
@@ -218,30 +256,63 @@ def build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def configure_logging(*, debug: bool, verbose: bool, syslog: bool) -> None:
-    """Set up logging once, for every run - not only in debug mode."""
-    if debug:
-        level = logging.DEBUG
-    elif verbose:
-        level = logging.INFO
-    else:
-        # lrcm normally runs from cron, which mails anything on stdout to root.
-        # Stay quiet unless something actually needs attention.
-        level = logging.WARNING
+class TimestampFormatter(logging.Formatter):
+    """Formatter whose timestamps are RFC 3339 with the local UTC offset.
 
+    ``logging``'s own ``%(asctime)s`` emits ``2026-08-16 09:12:34,567``: a
+    space instead of the ``T`` separator, a comma before the milliseconds and
+    no timezone at all. That is not ISO 8601, and without an offset a log line
+    from a fleet of machines in different timezones cannot be ordered.
+    """
+
+    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+        """Return ``record``'s creation time as ``2026-08-16T09:12:34.567+02:00``."""
+        moment = datetime.fromtimestamp(record.created).astimezone()
+        if datefmt:
+            return moment.strftime(datefmt)
+        return moment.isoformat(timespec="milliseconds")
+
+
+def log_level(*, debug: bool, verbose: bool) -> int:
+    """Return the logging level the given verbosity flags ask for."""
+    if debug:
+        return logging.DEBUG
+    if verbose:
+        return logging.INFO
+    # lrcm normally runs from cron, which mails anything the job writes to
+    # root. Stay quiet unless something actually needs attention.
+    return logging.WARNING
+
+
+def configure_logging(*, level: int, use_syslog: bool) -> None:
+    """Set up logging once, for every run - not only in debug mode.
+
+    Diagnostics go to stderr, which is where the Unix convention and
+    ``logging``'s own default put them; lrcm writes nothing else to stdout.
+    """
     LOG.setLevel(level)
     LOG.propagate = False
+    # Calling this twice - in a test, say - must not double every line.
+    for existing in list(LOG.handlers):
+        LOG.removeHandler(existing)
+        existing.close()
 
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    stream_handler = logging.StreamHandler(sys.stderr)
+    stream_handler.setFormatter(TimestampFormatter("%(asctime)s %(levelname)-8s %(message)s"))
     LOG.addHandler(stream_handler)
 
-    if syslog:
+    if use_syslog:
         try:
-            syslog_handler = logging.handlers.SysLogHandler(address="/dev/log")
+            syslog_handler = logging.handlers.SysLogHandler(
+                address="/dev/log", facility=logging.handlers.SysLogHandler.LOG_DAEMON
+            )
         except OSError:
             LOG.warning("syslog requested but /dev/log is not available")
         else:
+            # No timestamp here on purpose: syslog and journald stamp every
+            # record themselves, and two timestamps per line is a classic mess.
+            # The level travels as the syslog priority, which SysLogHandler
+            # maps from the record for us.
             syslog_handler.setFormatter(logging.Formatter("lrcm[%(process)d]: %(message)s"))
             LOG.addHandler(syslog_handler)
 
@@ -303,7 +374,14 @@ def check_distribution() -> None:
             f"is not supported; supported: "
             f"{', '.join(entry.label for entry in SUPPORTED_DISTRIBUTIONS)}"
         )
-    LOG.info("distribution %s is supported (%s)", pretty, supported.label)
+    if supported.ci_image is not None:
+        LOG.info("distribution %s is supported, verified in CI on %s", pretty, supported.ci_image)
+    else:
+        LOG.info(
+            "distribution %s is supported as a rebuild of %s, which is verified in CI",
+            pretty,
+            supported.derived_from,
+        )
 
 
 def check_python_version() -> None:
@@ -562,10 +640,20 @@ def clone_repository(config: Config, target: Path) -> None:
 
 
 def ansible_event_handler(event: dict[str, object]) -> bool:
-    """Forward ansible-runner output into our own logger."""
+    """Forward ansible-runner output into our own logger, one record per line.
+
+    ansible-runner hands over whole blocks that carry trailing newlines and
+    blank separator lines. Logging those verbatim produced timestamped empty
+    records; splitting and dropping the blanks keeps the log readable.
+    """
     stdout = event.get("stdout")
-    if stdout:
-        LOG.info("ansible: %s", stdout)
+    if not isinstance(stdout, str):
+        return True
+    for line in stdout.splitlines():
+        if line.strip():
+            # Ansible's own output is only interesting when debugging, which is
+            # what --debug promises; -v stays at lrcm's own progress.
+            LOG.debug("ansible | %s", line)
     return True
 
 
@@ -719,7 +807,10 @@ def apply_configuration(config: Config, arguments: argparse.Namespace) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point. Returns the process exit code."""
     arguments = build_argument_parser().parse_args(argv)
-    configure_logging(debug=arguments.debug, verbose=arguments.verbose, syslog=arguments.syslog)
+    configure_logging(
+        level=log_level(debug=arguments.debug, verbose=arguments.verbose),
+        use_syslog=arguments.syslog,
+    )
     install_signal_handlers()
     LOG.info("lrcm %s starting on %s", __version__, os.uname().nodename)
     log_memory_usage()

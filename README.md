@@ -117,11 +117,32 @@ lrcm [-c PATH] [-d] [-v] [-j BOOL | --no-cronjobs] [--no-delay] [--syslog]
 | `--syslog` | additionally send log records to syslog |
 | `--version` | print the version and exit |
 
-Without `-v` or `-d` lrcm only reports warnings and errors, so a cron run stays
-silent unless something needs attention.
-
 Exit codes: `0` success (also when another instance holds the lock), `1`
 configuration or environment error, `2` a step failed while working.
+
+## logging
+
+All diagnostics go to **stderr**; lrcm writes nothing to stdout. Every record
+carries an RFC 3339 timestamp with the local UTC offset, so lines from a fleet
+spread over several timezones can still be ordered:
+
+```
+2026-08-16T09:12:34.567+02:00 INFO     repository cloned into /tmp/lrcm-2tdlbisq/project
+2026-08-16T09:12:35.881+02:00 INFO     playbook playbook.yaml finished with status successful (rc 0)
+```
+
+Three verbosity levels:
+
+| flag | what you get |
+| --- | --- |
+| *(none)* | warnings and errors only - a successful cron run prints nothing at all |
+| `-v` | lrcm's own progress: clone, each playbook, each cron entry |
+| `-d` | the above plus ansible's output, one record per line, and memory figures |
+
+`--syslog` additionally sends everything to the local syslog socket under the
+`daemon` facility. Those records deliberately carry **no** timestamp of their
+own - syslog and journald stamp each line themselves, and the Python level is
+mapped to the syslog priority, so `journalctl -p warning -t lrcm` works.
 
 ## host-specific tasks
 
@@ -157,32 +178,42 @@ Support is matched on the distribution id and the `major.minor` version, so
 every point release of a supported version works - `24.04`, `24.04.1` and
 `24.04.7` alike.
 
-| distribution | tested |
-| --- | --- |
-| Debian GNU/Linux 12 (bookworm) | yes, in CI |
-| Debian GNU/Linux 13 (trixie) | yes, in CI |
-| Ubuntu 24.04 LTS (noble numbat), all point releases | yes, in CI |
-| Ubuntu 26.04 LTS (resolute raccoon), all point releases | yes, in CI |
-| elementary OS 8 (circe) | supported, not in CI |
-| Linux Mint 21.3 | supported, not in CI |
-| LMDE 6 (faye), LMDE 7 (gigi) | supported, not in CI |
-| Fedora Linux 39 | supported, not in CI |
+Every row marked "CI" is installed and driven through a full run - clone,
+playbook, host-specific playbook, cron entry creation and removal, failure exit
+codes - in that container on every push. The support table in `lrcm.py` carries
+the image name, and a unit test fails if it ever disagrees with the CI matrix,
+so the column below cannot quietly become a lie.
+
+| distribution | python | verified |
+| --- | --- | --- |
+| Debian GNU/Linux 12 (bookworm) | 3.11.2 | CI, from the `.deb` |
+| Debian GNU/Linux 13 (trixie) | 3.13.5 | CI, from the `.deb` |
+| Ubuntu 22.04 LTS (jammy jellyfish) | 3.10.12 | CI, from the `.deb` |
+| Ubuntu 24.04 LTS (noble numbat) | 3.12.3 | CI, from the `.deb` |
+| Ubuntu 26.04 LTS (resolute raccoon) | 3.14.4 | CI, from the `.deb` |
+| Fedora Linux 43 | 3.14.7 | CI, from the checkout |
+| Fedora Linux 44 | 3.14.7 | CI, from the checkout |
+| Linux Mint 21.3 (virginia) | 3.10.12 | rebuild of Ubuntu 22.04 |
+| Linux Mint 22 series (wilma … zena) | 3.12.3 | rebuild of Ubuntu 24.04 |
+| LMDE 6 (faye) | 3.11.2 | rebuild of Debian 12 |
+| LMDE 7 (gigi) | 3.13.5 | rebuild of Debian 13 |
+| elementary OS 8 (circe) | 3.12.3 | rebuild of Ubuntu 24.04 |
+
+The rebuilds have no public container image, so CI cannot run them directly.
+They are the named base distribution with a different desktop on top, and lrcm
+touches nothing a desktop changes.
 
 Running on an unlisted distribution is refused with exit code 1.
 
 ### Python
 
-lrcm requires Python 3.10 or newer. These versions are explicitly tested:
+lrcm requires Python 3.10 or newer, and is exercised on 3.10, 3.11, 3.12, 3.13
+and 3.14 through the distributions above.
 
-- 3.10.12 (Linux Mint 21.3)
-- 3.11.2 (Debian 12, LMDE 6)
-- 3.12.0
-- 3.12.3 (Ubuntu 24.04, elementary OS 8)
-- 3.13.5 (Debian 13, LMDE 7)
-- 3.14.0 (Ubuntu 26.04)
-
-Any other 3.10+ version runs but logs a warning, so a distribution point release
-that bumps the patch level no longer takes a whole fleet down.
+Compatibility is judged per minor series, not per patch level: distributions
+update the CPython micro version inside a stable release - Ubuntu 22.04 went
+3.10.4 → 3.10.6 → 3.10.12 - and none of that affects lrcm. A patch bump is
+silent; an untested minor series logs a warning and keeps running.
 
 ## system requirements
 

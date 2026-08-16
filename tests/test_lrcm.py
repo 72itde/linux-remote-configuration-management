@@ -48,18 +48,25 @@ def test_version_matches(actual: str, expected: str, result: bool) -> None:
         ("debian", "12.11"),
         ("debian", "13"),
         ("debian", "13.2"),
-        # every Ubuntu 24.04 point release, which is what distro.version()
-        # reports on 24.04, 24.04.1, ... 24.04.4 and later
+        # every Ubuntu point release, which is what distro.version() reports
+        # on 24.04, 24.04.1, ... 24.04.4 and later
+        ("ubuntu", "22.04"),
+        ("ubuntu", "22.04.5"),
         ("ubuntu", "24.04"),
         ("ubuntu", "24.04.1"),
         ("ubuntu", "24.04.4"),
         ("ubuntu", "26.04"),
         ("ubuntu", "26.04.2"),
+        ("fedora", "43"),
+        ("fedora", "44"),
         ("linuxmint", "6"),
         ("linuxmint", "7"),
         ("linuxmint", "21.3"),
+        # the whole Linux Mint 22 series: 22, 22.1, 22.2, 22.3, ...
+        ("linuxmint", "22"),
+        ("linuxmint", "22.3"),
         ("elementary", "8"),
-        ("fedora", "39"),
+        ("elementary", "8.0.1"),
     ],
 )
 def test_supported_distributions(distro_id: str, version: str) -> None:
@@ -69,10 +76,12 @@ def test_supported_distributions(distro_id: str, version: str) -> None:
 @pytest.mark.parametrize(
     ("distro_id", "version"),
     [
-        ("debian", "11"),
-        ("ubuntu", "22.04"),
-        ("ubuntu", "25.10"),
-        ("ubuntu", "24.10"),
+        ("debian", "11"),  # EOL
+        ("ubuntu", "20.04"),  # EOL
+        ("ubuntu", "25.10"),  # EOL interim release
+        ("ubuntu", "24.10"),  # EOL interim release
+        ("fedora", "42"),  # EOL
+        ("linuxmint", "20.3"),  # EOL
         ("arch", ""),
         ("rhel", "9"),
     ],
@@ -83,6 +92,41 @@ def test_unsupported_distributions(distro_id: str, version: str) -> None:
 
 def test_python_3_13_5_is_listed_as_tested() -> None:
     assert "3.13.5" in lrcm.TESTED_PYTHON_VERSIONS
+
+
+def ci_matrix_images() -> set[str]:
+    """Return the container images the CI package-test matrix actually runs."""
+    workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/ci.yml").read_text("utf-8"))
+    matrix = workflow["jobs"]["package-test"]["strategy"]["matrix"]["include"]
+    return {entry["image"] for entry in matrix}
+
+
+def test_every_ci_verified_distribution_is_really_in_the_ci_matrix() -> None:
+    """`verified_in_ci` must be a fact, not a claim.
+
+    Without this the support table could promise coverage that CI never
+    provides, which is exactly how the old exact-string list rotted.
+    """
+    claimed = {
+        entry.ci_image for entry in lrcm.SUPPORTED_DISTRIBUTIONS if entry.ci_image is not None
+    }
+    assert claimed == ci_matrix_images()
+
+
+def test_untested_distributions_say_what_they_are_derived_from() -> None:
+    for entry in lrcm.SUPPORTED_DISTRIBUTIONS:
+        if not entry.verified_in_ci:
+            assert entry.derived_from, f"{entry.label} claims support with no justification"
+
+
+def test_every_ci_matrix_entry_uses_a_known_install_mode() -> None:
+    workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/ci.yml").read_text("utf-8"))
+    matrix = workflow["jobs"]["package-test"]["strategy"]["matrix"]["include"]
+    assert {entry["mode"] for entry in matrix} <= {"package", "source"}
+    # Fedora cannot install a .deb; it must use the source mode.
+    for entry in matrix:
+        if entry["image"].startswith("fedora:"):
+            assert entry["mode"] == "source"
 
 
 @pytest.mark.parametrize("series", ["3.10", "3.11", "3.12", "3.13", "3.14"])

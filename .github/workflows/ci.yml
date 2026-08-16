@@ -19,8 +19,11 @@ env:
   # Base images are pinned to an exact version tag AND a sha256 digest.
   DEBIAN_12: docker.io/library/debian:12@sha256:813017f3d62be4b5891a7acca6a01bdcd4b8513daa81b1ab99d3a50385b26931
   DEBIAN_13: docker.io/library/debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958
+  UBUNTU_2204: docker.io/library/ubuntu:22.04@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f
   UBUNTU_2404: docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
   UBUNTU_2604: docker.io/library/ubuntu:26.04@sha256:678c6550cc43645e08669028bc177f50be4e7c5b8cca677067b1914d4afc7a03
+  FEDORA_43: docker.io/library/fedora:43@sha256:762d73ba1c455232b0272c5d445a34f36c4b9f421cbc05ce8102552325b6a222
+  FEDORA_44: docker.io/library/fedora:44@sha256:6c75d5bf57cb0fa5aa4b92c6a83c86c791644496d9ac230de7711f5b8ec3b898
 
 jobs:
   python:
@@ -134,30 +137,55 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Debian family: installed from the .deb this repository builds.
+          # Linux Mint 21.3 / 22, LMDE 6 / 7 and elementary OS 8 are rebuilds
+          # of these and have no public image of their own.
           - name: Debian 12 (bookworm)
             image_env: DEBIAN_12
+            image: debian:12
+            mode: package
           - name: Debian 13 (trixie)
             image_env: DEBIAN_13
+            image: debian:13
+            mode: package
+          - name: Ubuntu 22.04 LTS
+            image_env: UBUNTU_2204
+            image: ubuntu:22.04
+            mode: package
           - name: Ubuntu 24.04 LTS
             image_env: UBUNTU_2404
+            image: ubuntu:24.04
+            mode: package
           - name: Ubuntu 26.04 LTS
             image_env: UBUNTU_2604
+            image: ubuntu:26.04
+            mode: package
+          # Fedora: run from the checkout, there is no .rpm yet
+          - name: Fedora 43
+            image_env: FEDORA_43
+            image: fedora:43
+            mode: source
+          - name: Fedora 44
+            image_env: FEDORA_44
+            image: fedora:44
+            mode: source
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: lrcm-deb
           path: dist/
-      - name: install the package and run it end to end
+      - name: install lrcm and run it end to end
         run: |
           docker run --rm \
             --volume "${PWD}:/workspace:ro" \
             --workdir /workspace \
             --env DEBIAN_FRONTEND=noninteractive \
             "${!IMAGE_ENV}" \
-            /workspace/tests/smoke-test.sh
+            /workspace/tests/smoke-test.sh "${MODE}"
         env:
           IMAGE_ENV: ${{ matrix.image_env }}
+          MODE: ${{ matrix.mode }}
 
   ci-ok:
     name: all checks passed
