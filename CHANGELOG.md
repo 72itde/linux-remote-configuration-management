@@ -114,17 +114,14 @@ reworked the agent along current best practices and automated the packaging.
 - The three per-version client-setup playbooks were replaced by
   `playbook-debian-family.yaml` and `playbook-fedora.yaml`, both passing
   ansible-lint's production profile.
-- The stale `[LOGGING]` section was removed from the configuration template; the
-  code behind it was already deleted in 0.7.0.
-
-## 0.6.0
-
-- Add logging to (remote) Loki. Authentication has to be done via basic auth for now.
+- The stale `[LOGGING]` section was dropped from the configuration template. The
+  code behind it went in 0.7.0 and the remote logging target it pointed at no
+  longer exists; a leftover `[LOGGING]` section in an existing configuration
+  file is simply ignored. Use `--syslog` if you want lrcm's output collected.
 
 ## 0.5.2
 
 - Switch back from `SafeConfigParser` to `ConfigParser` because `SafeConfigParser` is deprecated in Python 3.12
-- add LOGGING-section and url-parameter for Loki as logging target. I assume authentication is always mandatory and credentials are the same as for Gitlab
 
 ## 0.5.1
 
