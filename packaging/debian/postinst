@@ -1,0 +1,43 @@
+#!/bin/sh
+# postinst script for lrcm
+set -e
+
+CONFIG_DIR=/etc/lrcm
+CONFIG_FILE="${CONFIG_DIR}/lrcm.conf"
+CONFIG_TEMPLATE="${CONFIG_DIR}/lrcm.conf.template"
+
+case "$1" in
+    configure)
+        # The configuration holds a git token, so it is deliberately not shipped
+        # as a conffile: dpkg would then prompt on upgrades and keep backup
+        # copies of the secret in /etc. Seed it once, then never touch it again.
+        if [ ! -e "${CONFIG_FILE}" ] && [ -e "${CONFIG_TEMPLATE}" ]; then
+            cp "${CONFIG_TEMPLATE}" "${CONFIG_FILE}"
+            echo "lrcm: created ${CONFIG_FILE} from the shipped template - edit it before use"
+        fi
+
+        # Enforce the intended ownership and modes on every configure run, so a
+        # broken upgrade or a careless administrator cannot leave the token
+        # world readable.
+        chown root:root "${CONFIG_DIR}"
+        chmod 0700 "${CONFIG_DIR}"
+        if [ -e "${CONFIG_FILE}" ]; then
+            chown root:root "${CONFIG_FILE}"
+            chmod 0600 "${CONFIG_FILE}"
+        fi
+        if [ -e "${CONFIG_TEMPLATE}" ]; then
+            chown root:root "${CONFIG_TEMPLATE}"
+            chmod 0600 "${CONFIG_TEMPLATE}"
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,30 @@
+#!/bin/sh
+# postrm script for lrcm
+set -e
+
+case "$1" in
+    remove|purge)
+        # lrcm writes these at runtime, so dpkg does not know about them. Left
+        # behind they would make cron run a script that no longer exists.
+        rm -f /etc/cron.d/lrcm_hourly /etc/cron.d/lrcm_daily /etc/cron.d/lrcm_reboot
+        rm -f /run/lrcm.pid
+        ;;
+esac
+
+case "$1" in
+    purge)
+        rm -f /etc/lrcm/lrcm.conf
+        # only succeeds when the administrator left nothing else behind
+        rmdir --ignore-fail-on-non-empty /etc/lrcm 2>/dev/null || true
+        ;;
+
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
