@@ -1,0 +1,68 @@
+[project]
+name = "lrcm"
+description = "linux remote configuration management agent"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Florian Gusinde", email = "florian.gusinde@72it.de" }]
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://lrcm.72it.de"
+Repository = "https://github.com/72itde/linux-remote-configuration-management"
+
+# lrcm is shipped as a single script inside a .deb, not as a wheel. This file
+# exists to give the tooling below a single, canonical configuration source.
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "RUF",  # ruff-specific
+    "S",    # flake8-bandit
+    "C4",   # flake8-comprehensions
+    "RET",  # flake8-return
+    "ARG",  # flake8-unused-arguments
+    "TRY",  # tryceratops
+    "LOG",  # flake8-logging
+    "G",    # flake8-logging-format
+]
+ignore = [
+    "TRY003",  # long messages outside exception class - fine for a CLI
+    "TRY400",  # expected, well-typed errors are reported without a traceback;
+               # the traceback is logged separately at debug level
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]  # pytest needs bare assert
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+files = ["lrcm.py", "tests"]
+
+[[tool.mypy.overrides]]
+# these third-party packages ship no type information
+module = ["ansible_runner.*", "validators.*", "distro.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# GitPython is typed but re-exports its public names implicitly
+module = ["git", "git.*"]
+implicit_reexport = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
