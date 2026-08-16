@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import multiprocessing
 import os
+import sys
 import textwrap
 from multiprocessing.synchronize import Event
 from pathlib import Path
@@ -84,8 +85,38 @@ def test_python_3_13_5_is_listed_as_tested() -> None:
     assert "3.13.5" in lrcm.TESTED_PYTHON_VERSIONS
 
 
+@pytest.mark.parametrize("series", ["3.10", "3.11", "3.12", "3.13", "3.14"])
+def test_every_supported_distribution_series_is_covered(series: str) -> None:
+    assert series in lrcm.TESTED_PYTHON_SERIES
+
+
 def test_minimum_python_version_is_not_above_the_running_interpreter() -> None:
     lrcm.check_python_version()
+
+
+def test_a_patch_bump_inside_a_tested_series_is_not_flagged(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Distributions SRU the CPython micro version; that must stay silent."""
+    monkeypatch.setattr(sys, "version_info", (3, 13, 99, "final", 0))
+    with caplog.at_level("WARNING", logger="lrcm"):
+        lrcm.check_python_version()
+    assert caplog.records == []
+
+
+def test_an_untested_minor_series_is_flagged(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(sys, "version_info", (3, 99, 0, "final", 0))
+    with caplog.at_level("WARNING", logger="lrcm"):
+        lrcm.check_python_version()
+    assert any("not one of the tested series" in r.message for r in caplog.records)
+
+
+def test_a_too_old_interpreter_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "version_info", (3, 9, 18, "final", 0))
+    with pytest.raises(lrcm.ConfigurationError, match="too old"):
+        lrcm.check_python_version()
 
 
 # --------------------------------------------------------------------------- #

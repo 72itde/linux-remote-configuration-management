@@ -105,11 +105,12 @@ chmod 0600 "${CONFIG}"
 
 log "running lrcm end to end, cron management disabled"
 lrcm --configfile "${CONFIG}" --debug --no-cronjobs --no-delay | tee /tmp/lrcm-run.log
-# TESTED_PYTHON_VERSIONS must stay in step with what the distributions ship.
-# The warning is harmless at runtime, but in CI it means the list needs an entry.
-if grep -q "is not one of the tested versions" /tmp/lrcm-run.log; then
+# The tested python series must stay in step with what the distributions ship.
+# A patch bump is deliberately not flagged - only a whole new minor series is,
+# because that is the one that can actually break the agent.
+if grep -q "is not one of the tested series" /tmp/lrcm-run.log; then
     python_now="$(python3 -c 'import platform; print(platform.python_version())')"
-    fail "python ${python_now} is missing from TESTED_PYTHON_VERSIONS in lrcm.py"
+    fail "python ${python_now} is a new minor series; add it to TESTED_PYTHON_VERSIONS in lrcm.py"
 fi
 [ -f "${MARKER}" ] || fail "the playbook did not run: ${MARKER} is missing"
 [ -f "${HOST_MARKER}" ] || fail "the host-specific playbook did not run: ${HOST_MARKER} is missing"

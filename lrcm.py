@@ -80,16 +80,23 @@ SUPPORTED_DISTRIBUTIONS: Final[tuple[SupportedDistribution, ...]] = (
 # Hard floor. Below this the interpreter cannot run this script at all.
 MINIMUM_PYTHON_VERSION: Final[tuple[int, int]] = (3, 10)
 
-# Versions this release was actually exercised against. Running on anything
-# else is allowed but produces a warning, so a distribution point release that
-# bumps the patch level no longer takes the whole fleet down.
+# Versions this release was actually exercised against.
 TESTED_PYTHON_VERSIONS: Final[tuple[str, ...]] = (
     "3.10.12",  # Linux Mint 21.3
     "3.11.2",  # Debian 12, LMDE 6
     "3.12.0",
     "3.12.3",  # Ubuntu 24.04, elementary OS 8
     "3.13.5",  # Debian 13, LMDE 7
-    "3.14.3",  # Ubuntu 26.04
+    "3.14.4",  # Ubuntu 26.04
+)
+
+# Compatibility is judged per minor series, not per patch level. Distributions
+# SRU the CPython micro version inside a stable release - Ubuntu 22.04 went
+# 3.10.4 -> 3.10.6 -> 3.10.12 - and none of those breaks lrcm. Warning about a
+# patch bump would be noise on every client; warning about an untested minor
+# series is a real signal.
+TESTED_PYTHON_SERIES: Final[frozenset[str]] = frozenset(
+    version.rsplit(".", 1)[0] for version in TESTED_PYTHON_VERSIONS
 )
 
 CRONJOB_SPECIAL_TIMES: Final[tuple[str, ...]] = ("hourly", "daily", "reboot")
@@ -309,13 +316,14 @@ def check_python_version() -> None:
         )
 
     current_string = ".".join(map(str, current))
-    if current_string in TESTED_PYTHON_VERSIONS:
+    series = f"{current[0]}.{current[1]}"
+    if series in TESTED_PYTHON_SERIES:
         LOG.info("python version %s is supported", current_string)
     else:
         LOG.warning(
-            "python version %s is not one of the tested versions (%s); continuing",
+            "python %s is not one of the tested series (%s); continuing",
             current_string,
-            ", ".join(TESTED_PYTHON_VERSIONS),
+            ", ".join(sorted(TESTED_PYTHON_SERIES)),
         )
 
 

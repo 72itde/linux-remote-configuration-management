@@ -1,8 +1,10 @@
 ---
 extends: default
 
+# dist/ is deliberately NOT ignored: CI renders the cron playbook into
+# dist/rendered/ and lints it there. Ignoring the directory silently disabled
+# the octal-values check on exactly the file it was meant to protect.
 ignore: |
-  dist/
   # Jinja2 source, not YAML until lrcm has rendered it
   templates/
 
@@ -11,7 +13,18 @@ rules:
     max: 120
   truthy:
     allowed-values: ["true", "false"]
-  comments:
-    min-spaces-from-content: 1
   document-start:
     present: true
+
+  # The four settings below are what ansible-lint requires of a project's
+  # yamllint configuration. Without them it refuses to reuse this file and
+  # warns on every run. forbid-implicit-octal is also the rule that catches
+  # `mode: 0600` being read as decimal 384.
+  comments-indentation: false
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
