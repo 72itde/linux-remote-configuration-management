@@ -1,0 +1,173 @@
+---
+name: ci
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: nothing in CI needs to write to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Base images are pinned to an exact version tag AND a sha256 digest.
+  DEBIAN_12: docker.io/library/debian:12@sha256:813017f3d62be4b5891a7acca6a01bdcd4b8513daa81b1ab99d3a50385b26931
+  DEBIAN_13: docker.io/library/debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958
+  UBUNTU_2404: docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+  UBUNTU_2604: docker.io/library/ubuntu:26.04@sha256:678c6550cc43645e08669028bc177f50be4e7c5b8cca677067b1914d4afc7a03
+
+jobs:
+  python:
+    name: python lint, types and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: "3.13"
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: ruff check
+        run: ruff check --output-format=github .
+      - name: ruff format
+        run: ruff format --check --diff .
+      - name: mypy
+        run: mypy
+      - name: pytest
+        run: pytest
+
+  ansible:
+    name: ansible-lint (production profile)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: "3.13"
+      - name: install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: lint the checked-in playbooks
+        run: ansible-lint --profile production
+      - name: render the cronjob template and lint the result
+        # templates/cronjob.yaml.j2 is Jinja2, not valid YAML, so it can only be
+        # linted after lrcm has rendered it. The output has to stay inside the
+        # repository, otherwise ansible-lint silently skips it as out of project.
+        run: |
+          python tests/render_cronjob_template.py --out-dir dist/rendered
+          rendered_count="$(find dist/rendered -name '*.yaml' | wc -l)"
+          if [ "${rendered_count}" -eq 0 ]; then
+            echo "::error::nothing was rendered, the lint below would be a no-op"
+            exit 1
+          fi
+          ansible-lint --profile production dist/rendered/*.yaml 2>&1 | tee lint.log
+          if grep -q 'on 0 files' lint.log; then
+            echo "::error::ansible-lint skipped every rendered playbook"
+            exit 1
+          fi
+
+  static:
+    name: shell and yaml lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - name: shellcheck
+        run: |
+          shellcheck --severity=style \
+            packaging/debian/build-deb.sh \
+            packaging/debian/postinst \
+            packaging/debian/postrm \
+            tests/smoke-test.sh \
+            tests/check-version-consistency.sh
+      - name: yamllint
+        run: |
+          python -m pip install --upgrade pip
+          pip install yamllint
+          yamllint --strict .
+      - name: version is consistent across the repository
+        run: ./tests/check-version-consistency.sh
+
+  build:
+    name: build .deb
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - name: build package
+        id: build
+        run: |
+          ./packaging/debian/build-deb.sh
+          echo "version=$(cat VERSION)" >> "${GITHUB_OUTPUT}"
+      - name: inspect package contents
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+      - name: package must not contain repository metadata
+        run: |
+          if dpkg-deb --contents dist/*.deb | grep -Eq '\.git(ignore|keep)|__pycache__|\.deb$'; then
+            echo "::error::the package contains files that must not be shipped"
+            dpkg-deb --contents dist/*.deb
+            exit 1
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: lrcm-deb
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  package-test:
+    name: install and run on ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Debian 12 (bookworm)
+            image_env: DEBIAN_12
+          - name: Debian 13 (trixie)
+            image_env: DEBIAN_13
+          - name: Ubuntu 24.04 LTS
+            image_env: UBUNTU_2404
+          - name: Ubuntu 26.04 LTS
+            image_env: UBUNTU_2604
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: lrcm-deb
+          path: dist/
+      - name: install the package and run it end to end
+        run: |
+          docker run --rm \
+            --volume "${PWD}:/workspace:ro" \
+            --workdir /workspace \
+            --env DEBIAN_FRONTEND=noninteractive \
+            "${!IMAGE_ENV}" \
+            /workspace/tests/smoke-test.sh
+        env:
+          IMAGE_ENV: ${{ matrix.image_env }}
+
+  ci-ok:
+    name: all checks passed
+    runs-on: ubuntu-24.04
+    needs: [python, ansible, static, build, package-test]
+    if: always()
+    steps:
+      - name: verify every required job succeeded
+        run: |
+          if echo '${{ toJSON(needs) }}' | grep -q '"result": *"\(failure\|cancelled\)"'; then
+            echo "::error::at least one required job did not succeed"
+            exit 1
+          fi
