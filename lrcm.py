@@ -350,7 +350,22 @@ def configure_logging(*, level: int, use_syslog: bool) -> None:
             # The level travels as the syslog priority, which SysLogHandler
             # maps from the record for us.
             syslog_handler.setFormatter(logging.Formatter("lrcm[%(process)d]: %(message)s"))
+            # --debug --syslog would otherwise push every line of ansible
+            # output into the system log. stderr still gets all of it.
+            syslog_handler.setLevel(max(level, logging.INFO))
             LOG.addHandler(syslog_handler)
+
+
+def redact_secrets_in_logs(*secrets_to_hide: str) -> None:
+    """Install the redacting filter on every handler configured so far.
+
+    Deliberately on the handlers rather than on the logger: a logger-level
+    filter only sees what is logged through that logger object, while a
+    handler-level one sees everything that reaches the sink. Redaction is
+    idempotent, so a record passing two filtered handlers is harmless.
+    """
+    for handler in LOG.handlers:
+        handler.addFilter(SecretRedactingFilter(*secrets_to_hide))
 
 
 def log_memory_usage() -> None:
@@ -856,7 +871,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         check_distribution()
         check_python_version()
         config = read_config(arguments.configfile)
-        LOG.addFilter(SecretRedactingFilter(config.token))
+        redact_secrets_in_logs(config.token)
 
         with pidfile_lock(config.pidfile) as acquired:
             if not acquired:

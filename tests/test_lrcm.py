@@ -688,6 +688,18 @@ def test_log_level(debug: bool, verbose: bool, expected: int) -> None:
     assert lrcm.log_level(debug=debug, verbose=verbose) == expected
 
 
+def test_redaction_is_installed_on_every_handler() -> None:
+    """A logger-level filter would miss records that reach the sink another way."""
+    try:
+        lrcm.configure_logging(level=logging.DEBUG, use_syslog=False)
+        lrcm.redact_secrets_in_logs("s3cr3t")
+        handler = lrcm.LOG.handlers[0]
+        assert any(isinstance(f, lrcm.SecretRedactingFilter) for f in handler.filters)
+    finally:
+        for existing in list(lrcm.LOG.handlers):
+            lrcm.LOG.removeHandler(existing)
+
+
 def test_the_redacting_filter_hides_the_token_in_message_and_args() -> None:
     """The ansible pass-through is the sink no call site can protect."""
     log_filter = lrcm.SecretRedactingFilter("s3cr3t")

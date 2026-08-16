@@ -1,19 +1,12 @@
-[project]
-name = "lrcm"
-description = "linux remote configuration management agent"
-readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
-authors = [{ name = "Florian Gusinde", email = "florian.gusinde@72it.de" }]
-requires-python = ">=3.10"
-dynamic = ["version"]
-
-[project.urls]
-Homepage = "https://lrcm.72it.de"
-Repository = "https://github.com/72itde/linux-remote-configuration-management"
-
-# lrcm is shipped as a single script inside a .deb, not as a wheel. This file
-# exists to give the tooling below a single, canonical configuration source.
+# Tool configuration for lrcm.
+#
+# There is deliberately no [project] table and no [build-system]: lrcm is
+# shipped as a .deb built by packaging/debian/build-deb.sh, never as a Python
+# distribution. Declaring a package here that cannot actually be built - the
+# previous table had dynamic = ["version"] with no backend to supply it, so
+# `pip install .` failed on metadata generation - is worse than declaring none.
+# The version lives in VERSION and lrcm.py; tests/check-version-consistency.sh
+# keeps them in step.
 
 [tool.ruff]
 line-length = 100
