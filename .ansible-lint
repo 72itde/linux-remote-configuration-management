@@ -1,0 +1,13 @@
+---
+profile: production
+
+exclude_paths:
+  - .github/
+  - .git/
+
+# templates/cronjob.yaml.j2 is rendered by plain Jinja2 inside lrcm.py before it
+# is handed to ansible-runner, so ansible-lint cannot parse it directly. The
+# rendered result is linted in CI instead (see .github/workflows/ci.yml).
+kinds:
+  - playbook: "client-setup/playbook-*.yaml"
+  - playbook: "dist/rendered/*.yaml"

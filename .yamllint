@@ -1,0 +1,17 @@
+---
+extends: default
+
+ignore: |
+  dist/
+  # Jinja2 source, not YAML until lrcm has rendered it
+  templates/
+
+rules:
+  line-length:
+    max: 120
+  truthy:
+    allowed-values: ["true", "false"]
+  comments:
+    min-spaces-from-content: 1
+  document-start:
+    present: true

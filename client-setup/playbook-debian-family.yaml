@@ -1,0 +1,33 @@
+---
+# Prepares a Debian-family client for lrcm.
+#
+# Covers Debian 12/13, Ubuntu 24.04/26.04 LTS, Linux Mint, LMDE and
+# elementary OS - the package names are identical on all of them.
+#
+#   ansible-playbook -i localhost, -c local client-setup/playbook-debian-family.yaml
+- name: Prepare a Debian-family client for lrcm
+  hosts: 127.0.0.1
+  connection: local
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Install the lrcm runtime dependencies
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-git
+          - python3-ansible-runner
+          - python3-jinja2
+          - python3-validators
+          - python3-distro
+          - git
+          - cron
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Enable and start the cron service
+      ansible.builtin.systemd:
+        name: cron
+        state: started
+        enabled: true
