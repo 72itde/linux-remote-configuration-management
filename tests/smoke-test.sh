@@ -44,6 +44,15 @@ install_package() {
     local package
     package="$(find "${WORKSPACE}/dist" -maxdepth 1 -name 'lrcm_*.deb' -print -quit)"
     [ -n "${package}" ] || fail "no .deb found in ${WORKSPACE}/dist"
+
+    # Assert on what the package ships, not on what dpkg chose to unpack: the
+    # Ubuntu images carry path-exclude=/usr/share/man/* in /etc/dpkg/dpkg.cfg.d,
+    # so a man page that is present in the .deb never reaches the filesystem.
+    dpkg-deb --contents "${package}" | grep -q 'usr/share/man/man1/lrcm\.1\.gz' \
+        || fail "the package does not ship a manual page"
+    dpkg-deb --contents "${package}" | grep -q 'usr/share/lrcm/lrcm\.conf\.template' \
+        || fail "the package does not ship the config template"
+
     apt-get install -y -qq "${package}"
 
     log "verifying the installed layout"
@@ -51,10 +60,8 @@ install_package() {
     [ -f /opt/lrcm/templates/cronjob.yaml.j2 ] || fail "the cronjob template is missing"
     [ -L /usr/bin/lrcm ] || fail "/usr/bin/lrcm symlink is missing"
     [ -f /etc/lrcm/lrcm.conf ] || fail "postinst did not seed /etc/lrcm/lrcm.conf"
-    [ -f /usr/share/lrcm/lrcm.conf.template ] || fail "the config template is missing"
     # Policy 10.7: nothing may sit in /etc that dpkg does not know as a conffile
     [ ! -e /etc/lrcm/lrcm.conf.template ] || fail "the template must not be in /etc"
-    [ -f /usr/share/man/man1/lrcm.1.gz ] || fail "the manual page is missing"
 
     local mode
     mode="$(stat -c '%a %U:%G' /etc/lrcm/lrcm.conf)"
