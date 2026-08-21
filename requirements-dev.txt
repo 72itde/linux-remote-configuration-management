@@ -9,5 +9,5 @@ yamllint>=1.35
 
 # tests/test_lrcm.py parses the rendered cron playbook, and mypy needs the
 # stubs for it - without them `mypy` fails on the import alone.
-PyYAML>=6.0
+PyYAML>=6.0.3
 types-PyYAML>=6.0
