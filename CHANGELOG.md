@@ -1,5 +1,12 @@
 # changelog
 
+## unreleased
+
+- Releases are now built reproducibly: the release workflow pins
+  `SOURCE_DATE_EPOCH` to the tagged commit's date, so rebuilding a tag produces
+  a byte-identical `.deb`. Anyone can therefore verify that a published package
+  came from the published source - see "verifying a release" in the README.
+
 ## 0.9.0
 
 Reworked logging, and widened the supported platforms to every current Debian,

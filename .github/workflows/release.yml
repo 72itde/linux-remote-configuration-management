@@ -39,6 +39,15 @@ jobs:
           fi
           ./tests/check-version-consistency.sh
 
+      - name: pin the build timestamp to the tagged commit
+        # reproducible-builds.org/specs/source-date-epoch: build-deb.sh uses
+        # this instead of the wall clock for the dates it embeds, and dpkg-deb
+        # clamps every file mtime to it. Two builds of the same commit are then
+        # byte identical, so anyone can rebuild a release and compare its
+        # sha256 against the published asset - which is how you would notice a
+        # binary that did not come from this source.
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "${GITHUB_ENV}"
+
       - name: build package
         run: ./packaging/debian/build-deb.sh
 

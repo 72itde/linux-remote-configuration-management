@@ -282,6 +282,25 @@ The [release workflow](.github/workflows/release.yml) verifies that tag,
 `SHA256SUMS` and publishes a GitHub release with the changelog section as
 release notes.
 
+### verifying a release
+
+Releases are built reproducibly: the workflow sets `SOURCE_DATE_EPOCH` to the
+tagged commit's date, so rebuilding the same tag yields a byte-identical
+package. That lets anyone confirm a published `.deb` really came from the
+published source:
+
+```sh
+git clone --depth 1 --branch vX.Y.Z https://github.com/72itde/linux-remote-configuration-management
+cd linux-remote-configuration-management
+SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" ./packaging/debian/build-deb.sh
+sha256sum dist/*.deb          # must match SHA256SUMS from the release page
+```
+
+lrcm runs as root on every client it manages, so being able to check that the
+binary on the releases page matches the source is worth the one line it costs.
+Note this holds from v0.10.0 onwards; v0.9.0 and earlier were built before the
+timestamp was pinned and will differ in their embedded build date.
+
 ## token creation
 
 ### Gitlab
