@@ -1,4 +1,9 @@
 ---
+# Note: no `labels:` key here on purpose. Naming labels explicitly makes
+# Dependabot require that they already exist, and it refuses to open the pull
+# request otherwise ("The following labels could not be found: dependencies").
+# Left unset, Dependabot applies its default `dependencies` label and creates
+# it if the repository does not have it yet - which is what we wanted anyway.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -7,7 +12,6 @@ updates:
       interval: monthly
     commit-message:
       prefix: "ci"
-    labels: [dependencies]
 
   - package-ecosystem: pip
     directory: /
@@ -15,4 +19,3 @@ updates:
       interval: monthly
     commit-message:
       prefix: "deps"
-    labels: [dependencies]
