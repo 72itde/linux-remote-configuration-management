@@ -1,0 +1,83 @@
+---
+name: release
+
+"on":
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: build the package but do not create a release
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build and publish
+    runs-on: ubuntu-24.04
+    permissions:
+      # required by softprops/action-gh-release to create the release
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
+
+      - name: the git tag must match VERSION and CHANGELOG.md
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [ "${tag_version}" != "${file_version}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match VERSION (${file_version})"
+            exit 1
+          fi
+          ./tests/check-version-consistency.sh
+
+      - name: build package
+        run: ./packaging/debian/build-deb.sh
+
+      - name: generate checksums
+        run: |
+          cd dist
+          sha256sum ./*.deb > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: extract the changelog section for this release
+        id: notes
+        run: |
+          version="$(cat VERSION)"
+          {
+            echo 'body<<LRCM_EOF'
+            awk -v v="## ${version}" '
+              $0 == v { found = 1; next }
+              found && /^## / { exit }
+              found { print }
+            ' CHANGELOG.md
+            echo 'LRCM_EOF'
+          } >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: lrcm-deb
+          path: dist/
+          if-no-files-found: error
+
+      - name: create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2
+        with:
+          files: |
+            dist/*.deb
+            dist/SHA256SUMS
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          # SemVer 2.0.0 §9: anything after the first hyphen is a pre-release
+          # identifier - rc, beta, alpha, 0.3.7 - not just "-rc".
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true

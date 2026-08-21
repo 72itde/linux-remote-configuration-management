@@ -1,0 +1,74 @@
+# Tool configuration for lrcm.
+#
+# There is deliberately no [project] table and no [build-system]: lrcm is
+# shipped as a .deb built by packaging/debian/build-deb.sh, never as a Python
+# distribution. Declaring a package here that cannot actually be built - the
+# previous table had dynamic = ["version"] with no backend to supply it, so
+# `pip install .` failed on metadata generation - is worse than declaring none.
+# The version lives in VERSION and lrcm.py; tests/check-version-consistency.sh
+# keeps them in step.
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "RUF",  # ruff-specific
+    "S",    # flake8-bandit
+    "C4",   # flake8-comprehensions
+    "RET",  # flake8-return
+    "ARG",  # flake8-unused-arguments
+    "TRY",  # tryceratops
+    "LOG",  # flake8-logging
+    "G",    # flake8-logging-format
+    "D",    # pydocstyle - PEP 257
+    "N",    # pep8-naming - PEP 8, incl. N818 on exception names
+    "BLE",  # flake8-blind-except
+    "PL",   # pylint, incl. PLC0415 on function-level imports
+    "PERF", # perflint
+]
+ignore = [
+    "TRY003",  # long messages outside exception class - fine for a CLI
+    "TRY400",  # expected, well-typed errors are reported without a traceback;
+               # the traceback is logged separately at debug level
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101",     # pytest needs bare assert
+    "D103",     # a test's name is its documentation
+    "PLR2004",  # literal expectations are the point of a test
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+files = ["lrcm.py", "tests"]
+
+[[tool.mypy.overrides]]
+# these third-party packages ship no type information
+module = ["ansible_runner.*", "validators.*", "distro.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# GitPython is typed but re-exports its public names implicitly
+module = ["git", "git.*"]
+implicit_reexport = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"

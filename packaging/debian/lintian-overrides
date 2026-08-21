@@ -1,0 +1,22 @@
+# lintian overrides for lrcm
+#
+# lintian's defaults assume a package headed for the Debian archive. lrcm is a
+# third-party vendor package distributed from GitHub releases, which changes
+# what the correct answer is for these two tags. Everything else lintian
+# reports is treated as a hard failure in CI.
+
+# FHS 3.0 section 3.13 reserves /opt for "add-on application software packages"
+# - exactly what lrcm is. Debian Policy 9.1.1 forbids /opt for packages *in the
+# archive*, which is what this tag enforces, and lrcm is not one of them.
+# Moving the payload would also strand the /etc/cron.d entries that existing
+# installations already point at /opt/lrcm/lrcm.py.
+lrcm: dir-or-file-in-opt [opt/lrcm/]
+lrcm: dir-or-file-in-opt [opt/lrcm/lrcm.py]
+lrcm: dir-or-file-in-opt [opt/lrcm/templates/]
+lrcm: dir-or-file-in-opt [opt/lrcm/templates/cronjob.yaml.j2]
+
+# /etc/lrcm/lrcm.conf holds a git token with push-free but read access to the
+# playbook repository. The directory is 0700 so the secret stays unreadable
+# even if the file mode is ever changed by hand; postinst re-applies both on
+# every configure.
+lrcm: non-standard-dir-perm 0700 != 0755 [etc/lrcm/]

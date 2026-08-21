@@ -1,6 +1,13 @@
-GitPython==3.1.24
-distro==1.7.0
-psutil==5.9.0
-validators==0.14.2
-ansible-runner==2.1.1
-python-logging-loki==0.3.1
+# Runtime dependencies.
+#
+# On the supported distributions these are installed as distribution packages
+# (see client-setup/), not with pip - Debian 12+, Ubuntu 24.04+ and their
+# derivatives mark the system interpreter as externally managed (PEP 668).
+# This file exists for CI and for development environments.
+#
+# Lower bounds match what the oldest supported distribution (Debian 12) ships.
+GitPython>=3.1.30
+ansible-runner>=2.3.1
+Jinja2>=3.1.2
+distro>=1.8.0
+validators>=0.20.0

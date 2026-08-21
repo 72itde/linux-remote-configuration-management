@@ -1,0 +1,106 @@
+.TH LRCM 1 "@DATE@" "lrcm @VERSION@" "User Commands"
+.SH NAME
+lrcm \- linux remote configuration management agent
+.SH SYNOPSIS
+.B lrcm
+.RI [ options ]
+.SH DESCRIPTION
+.B lrcm
+clones a git repository containing Ansible playbooks and applies them to the
+local machine. It targets Linux clients that cannot be reached from a central
+management infrastructure: remote schools and universities, IoT devices,
+unattended terminals, marketing displays and sensors.
+.PP
+On every run lrcm checks that the distribution and the Python version are
+supported, takes an advisory lock so two runs cannot overlap, waits a fixed
+plus a random delay, shallow-clones the configured branch into a temporary
+directory, applies
+.IR playbook.yaml ,
+then
+.IR <hostname>-playbook.yaml
+if it exists, creates or removes its own
+.I /etc/cron.d/lrcm_*
+entries, and finally deletes the temporary directory and releases the lock \-
+also when something went wrong.
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-configfile " " \fIPATH\fR
+Read the configuration from \fIPATH\fR instead of
+.IR /etc/lrcm/lrcm.conf .
+.TP
+.BR \-v ", " \-\-verbose
+Log lrcm's own progress: the clone, each playbook and each cron entry.
+.TP
+.BR \-d ", " \-\-debug
+Log everything, including ansible's output and memory figures.
+.TP
+.BR \-j ", " \-\-cronjobs " " \fIBOOL\fR
+Manage the lrcm cron entries. Defaults to true.
+.TP
+.B \-\-no\-cronjobs
+Equivalent to \fB\-\-cronjobs=false\fR.
+.TP
+.B \-\-no\-delay
+Skip the configured start delay. Intended for interactive runs.
+.TP
+.B \-\-syslog
+Additionally send log records to syslog, under the \fBdaemon\fR facility.
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.BR \-h ", " \-\-help
+Print a usage summary and exit.
+.SH "EXIT STATUS"
+.TP
+.B 0
+Success. Also returned when another instance holds the lock.
+.TP
+.B 1
+Configuration or environment error: unreadable configuration, unsupported
+distribution, Python too old.
+.TP
+.B 2
+A step failed while working: the clone failed, or a playbook did not succeed.
+.SH FILES
+.TP
+.I /etc/lrcm/lrcm.conf
+Configuration. Created from the shipped template on first install, and never
+overwritten by an upgrade. Holds the git token, so it is mode 0600 and owned by
+root.
+.TP
+.I /usr/share/lrcm/lrcm.conf.template
+The commented template the above is seeded from.
+.TP
+.I /run/lrcm.pid
+Advisory lock file that keeps two lrcm runs from overlapping.
+.TP
+.I /etc/cron.d/lrcm_hourly, /etc/cron.d/lrcm_daily, /etc/cron.d/lrcm_reboot
+Cron entries lrcm creates and removes according to the \fBCRONJOB\fR section of
+its configuration.
+.SH LOGGING
+All diagnostics go to standard error; lrcm writes nothing to standard output.
+Each record carries an RFC 3339 timestamp with the local UTC offset. Without
+\fB\-v\fR or \fB\-d\fR only warnings and errors are printed, so a successful
+cron run stays silent.
+.SH EXAMPLES
+.PP
+Run once against the configured repository without touching the cron entries:
+.PP
+.RS
+.EX
+lrcm \-\-verbose \-\-no\-cronjobs \-\-no\-delay
+.EE
+.RE
+.SH "SEE ALSO"
+.BR cron (8),
+.BR crontab (5),
+.BR ansible-playbook (1)
+.PP
+Full documentation at
+.I /usr/share/doc/lrcm/README.md
+and
+.UR https://github.com/72itde/linux-remote-configuration-management
+.UE .
+.SH AUTHOR
+Florian Gusinde <florian.gusinde@72it.de>
