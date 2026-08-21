@@ -1,7 +1,7 @@
 # Development and CI tooling.
 -r requirements.txt
 
-ruff>=0.6
+ruff>=0.16.3
 mypy>=2.3.1
 pytest>=8.0
 ansible-lint>=24.0
