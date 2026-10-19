@@ -8,7 +8,7 @@ Github: https://github.com/72itde/linux-remote-configuration-management
 Contact: https://www.72it.de/#tab-contact
 """
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import argparse
 import configparser
@@ -739,6 +739,12 @@ def run_playbook(private_data_dir: Path, playbook: str, timeout_seconds: int) ->
         raise StepFailedError(f"playbook {playbook} failed with status {status} (rc {return_code})")
 
 
+# cron starts jobs without a PATH of their own with just /usr/bin:/bin, so tools
+# in the sbin directories (ldconfig, start-stop-daemon) are not found. This is
+# the usual PATH of root.
+CRONJOB_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
 def render_cronjob_playbook(
     *,
     template_directory: Path,
@@ -762,12 +768,22 @@ def render_cronjob_playbook(
         cronjob_special_time=special_time,
         cronjob_name=json.dumps(f"Manage lrcm {special_time} cronjob file"),
         cronjob_job=json.dumps(job),
+        cronjob_path_name="PATH",
+        cronjob_path=json.dumps(CRONJOB_PATH),
         cronjob_file=json.dumps(f"lrcm_{special_time}"),
         cronjob_file_path=json.dumps(f"/etc/cron.d/lrcm_{special_time}"),
         cronjob_state="present" if enabled else "absent",
         cronjob_file_state="file" if enabled else "absent",
     )
     output_path.write_text(rendered, encoding="utf-8")
+
+
+def cronjob_command(script_path: Path, configfile: Path) -> str:
+    """Build the command line cron runs; --syslog puts its output in the journal."""
+    return (
+        f"{shlex.quote(str(script_path))} "
+        f"--configfile={shlex.quote(str(configfile.resolve()))} --syslog"
+    )
 
 
 def manage_cronjobs(config: Config, private_data_dir: Path, configfile: Path) -> None:
@@ -779,7 +795,7 @@ def manage_cronjobs(config: Config, private_data_dir: Path, configfile: Path) ->
     # cron hands this line to /bin/sh, so both paths have to survive as single
     # words. A config path containing a space would otherwise install a broken
     # root cron entry, and one containing ';' would append a second command.
-    job = f"{shlex.quote(str(script_path))} --configfile={shlex.quote(str(configfile.resolve()))}"
+    job = cronjob_command(script_path, configfile)
     LOG.info("managing cronjobs for %s", script_path)
 
     for special_time in CRONJOB_SPECIAL_TIMES:

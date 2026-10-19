@@ -600,7 +600,13 @@ def test_rendered_cronjob_playbook_is_valid_yaml(
     )
     tasks = play["tasks"]
     assert isinstance(tasks, list)
-    cron_task, file_task = tasks
+    path_task, cron_task, file_task = tasks
+
+    assert path_task["ansible.builtin.cron"]["env"] is True
+    assert path_task["ansible.builtin.cron"]["name"] == "PATH"
+    assert path_task["ansible.builtin.cron"]["job"] == lrcm.CRONJOB_PATH
+    assert path_task["ansible.builtin.cron"]["cron_file"] == f"lrcm_{special_time}"
+    assert path_task["ansible.builtin.cron"]["state"] == ("present" if enabled else "absent")
 
     assert cron_task["ansible.builtin.cron"]["special_time"] == special_time
     assert cron_task["ansible.builtin.cron"]["cron_file"] == f"lrcm_{special_time}"
@@ -618,7 +624,7 @@ def test_rendered_cronjob_playbook_survives_hostile_paths(tmp_path: Path) -> Non
     play = render(tmp_path, special_time="hourly", job=job, enabled=True)
     tasks = play["tasks"]
     assert isinstance(tasks, list)
-    assert tasks[0]["ansible.builtin.cron"]["job"] == job
+    assert tasks[1]["ansible.builtin.cron"]["job"] == job
 
 
 def test_rendered_cronjob_playbook_names_every_play_and_task(tmp_path: Path) -> None:
@@ -746,6 +752,7 @@ def test_cron_job_line_quotes_paths_for_the_shell(
     for job in captured:
         # shlex.split is what /bin/sh word-splitting amounts to here
         words = shlex.split(job)
-        assert len(words) == 2, job
+        assert len(words) == 3, job
+        assert words[2] == "--syslog"
         assert words[1] == f"--configfile={configfile.resolve()}"
         assert ";" not in words[0]

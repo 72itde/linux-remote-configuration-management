@@ -1,5 +1,23 @@
 # changelog
 
+## 0.9.1
+
+### changed
+
+- The generated cron command now includes `--syslog`, so the output of
+  scheduled runs reaches syslog/journald (`journalctl -t lrcm`) instead of
+  being dropped by cron. Existing entries are updated on the next run.
+
+### fixed
+
+- **Runs started by cron failed when a playbook needed a tool from an sbin
+  directory.** The `/etc/cron.d/lrcm_*` entries carried no `PATH`, so cron
+  gave them only `/usr/bin:/bin`; `dpkg --configure -a` then aborted with
+  `ldconfig`/`start-stop-daemon` "not found in PATH" and the run ended with
+  rc 2. Manual runs have root's full `PATH` and hid the problem. lrcm now
+  writes `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`
+  into each cron file; existing entries are updated on the next run.
+
 ## 0.9.0
 
 Reworked logging, and widened the supported platforms to every current Debian,

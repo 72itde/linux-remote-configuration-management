@@ -7,6 +7,17 @@
   connection: local
   gather_facts: false
   tasks:
+    # cron gives jobs without a PATH only /usr/bin:/bin, which hides ldconfig
+    # and start-stop-daemon (in /usr/sbin, /sbin) from dpkg.
+    - name: Manage the lrcm {{ cronjob_special_time }} cron PATH
+      ansible.builtin.cron:
+        name: {{ cronjob_path_name }}
+        env: true
+        job: {{ cronjob_path }}
+        cron_file: {{ cronjob_file }}
+        user: root
+        state: {{ cronjob_state }}
+
     - name: Manage the lrcm {{ cronjob_special_time }} cron entry
       ansible.builtin.cron:
         name: {{ cronjob_name }}
