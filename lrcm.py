@@ -778,6 +778,14 @@ def render_cronjob_playbook(
     output_path.write_text(rendered, encoding="utf-8")
 
 
+def cronjob_command(script_path: Path, configfile: Path) -> str:
+    """Build the command line cron runs; --syslog puts its output in the journal."""
+    return (
+        f"{shlex.quote(str(script_path))} "
+        f"--configfile={shlex.quote(str(configfile.resolve()))} --syslog"
+    )
+
+
 def manage_cronjobs(config: Config, private_data_dir: Path, configfile: Path) -> None:
     """Create or remove the lrcm cron entries according to the configuration."""
     # __file__ may be reached through the /usr/bin/lrcm symlink; resolve() gets
@@ -787,7 +795,7 @@ def manage_cronjobs(config: Config, private_data_dir: Path, configfile: Path) ->
     # cron hands this line to /bin/sh, so both paths have to survive as single
     # words. A config path containing a space would otherwise install a broken
     # root cron entry, and one containing ';' would append a second command.
-    job = f"{shlex.quote(str(script_path))} --configfile={shlex.quote(str(configfile.resolve()))}"
+    job = cronjob_command(script_path, configfile)
     LOG.info("managing cronjobs for %s", script_path)
 
     for special_time in CRONJOB_SPECIAL_TIMES:

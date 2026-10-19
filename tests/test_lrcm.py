@@ -752,6 +752,7 @@ def test_cron_job_line_quotes_paths_for_the_shell(
     for job in captured:
         # shlex.split is what /bin/sh word-splitting amounts to here
         words = shlex.split(job)
-        assert len(words) == 2, job
+        assert len(words) == 3, job
+        assert words[2] == "--syslog"
         assert words[1] == f"--configfile={configfile.resolve()}"
         assert ";" not in words[0]

@@ -2,6 +2,12 @@
 
 ## 0.9.1
 
+### changed
+
+- The generated cron command now includes `--syslog`, so the output of
+  scheduled runs reaches syslog/journald (`journalctl -t lrcm`) instead of
+  being dropped by cron. Existing entries are updated on the next run.
+
 ### fixed
 
 - **Runs started by cron failed when a playbook needed a tool from an sbin
