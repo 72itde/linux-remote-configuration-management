@@ -8,7 +8,7 @@ Github: https://github.com/72itde/linux-remote-configuration-management
 Contact: https://www.72it.de/#tab-contact
 """
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import argparse
 import configparser
@@ -739,6 +739,12 @@ def run_playbook(private_data_dir: Path, playbook: str, timeout_seconds: int) ->
         raise StepFailedError(f"playbook {playbook} failed with status {status} (rc {return_code})")
 
 
+# cron starts jobs without a PATH of their own with just /usr/bin:/bin, so tools
+# in the sbin directories (ldconfig, start-stop-daemon) are not found. This is
+# the usual PATH of root.
+CRONJOB_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
 def render_cronjob_playbook(
     *,
     template_directory: Path,
@@ -762,6 +768,8 @@ def render_cronjob_playbook(
         cronjob_special_time=special_time,
         cronjob_name=json.dumps(f"Manage lrcm {special_time} cronjob file"),
         cronjob_job=json.dumps(job),
+        cronjob_path_name="PATH",
+        cronjob_path=json.dumps(CRONJOB_PATH),
         cronjob_file=json.dumps(f"lrcm_{special_time}"),
         cronjob_file_path=json.dumps(f"/etc/cron.d/lrcm_{special_time}"),
         cronjob_state="present" if enabled else "absent",

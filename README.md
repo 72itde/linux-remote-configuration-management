@@ -100,7 +100,9 @@ The configuration lives in `/etc/lrcm/lrcm.conf`; see
 | `PIDFILE` | `pidfile` | `/run/lrcm.pid` | lock file that serialises lrcm runs |
 
 Cron entries set to `false` are actively removed, so switching one off here
-uninstalls it on the next run.
+uninstalls it on the next run. Each cron file also sets root's usual `PATH`
+(`/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`), because cron
+itself would only provide `/usr/bin:/bin`.
 
 ## command line
 
