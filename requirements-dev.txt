@@ -1,7 +1,7 @@
 # Development and CI tooling.
 -r requirements.txt
 
-ruff>=0.16.3
+ruff>=0.16.5
 mypy>=2.3.1
 pytest>=9.1.1
 ansible-lint>=26.8.0
@@ -10,4 +10,4 @@ yamllint>=1.38.0
 # tests/test_lrcm.py parses the rendered cron playbook, and mypy needs the
 # stubs for it - without them `mypy` fails on the import alone.
 PyYAML>=6.0.3
-types-PyYAML>=6.0
+types-PyYAML>=6.0.12.20260815
