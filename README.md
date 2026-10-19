@@ -191,7 +191,6 @@ so the column below cannot quietly become a lie.
 
 | distribution | python | verified |
 | --- | --- | --- |
-| Debian GNU/Linux 12 (bookworm) | 3.11.2 | CI, from the `.deb` |
 | Debian GNU/Linux 13 (trixie) | 3.13.5 | CI, from the `.deb` |
 | Ubuntu 22.04 LTS (jammy jellyfish) | 3.10.12 | CI, from the `.deb` |
 | Ubuntu 24.04 LTS (noble numbat) | 3.12.3 | CI, from the `.deb` |
@@ -200,7 +199,6 @@ so the column below cannot quietly become a lie.
 | Fedora Linux 44 | 3.14.6 | CI, from the checkout |
 | Linux Mint 21.3 (virginia) | 3.10.12 | rebuild of Ubuntu 22.04 |
 | Linux Mint 22 series (wilma … zena) | 3.12.3 | rebuild of Ubuntu 24.04 |
-| LMDE 6 (faye) | 3.11.2 | rebuild of Debian 12 |
 | LMDE 7 (gigi) | 3.13.5 | rebuild of Debian 13 |
 | elementary OS 8 (circe) | 3.12.3 | rebuild of Ubuntu 24.04 |
 
@@ -212,8 +210,8 @@ Running on an unlisted distribution is refused with exit code 1.
 
 ### Python
 
-lrcm requires Python 3.10 or newer, and is exercised on 3.10, 3.11, 3.12, 3.13
-and 3.14 through the distributions above.
+lrcm requires Python 3.10 or newer, and is exercised on 3.10, 3.12, 3.13 and
+3.14 through the distributions above.
 
 Compatibility is judged per minor series, not per patch level: distributions
 update the CPython micro version inside a stable release - Ubuntu 22.04 went

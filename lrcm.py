@@ -8,7 +8,7 @@ Github: https://github.com/72itde/linux-remote-configuration-management
 Contact: https://www.72it.de/#tab-contact
 """
 
-__version__ = "0.9.1"
+__version__ = "0.10.0"
 
 import argparse
 import configparser
@@ -83,7 +83,6 @@ class SupportedDistribution:
 # actually provide.
 SUPPORTED_DISTRIBUTIONS: Final[tuple[SupportedDistribution, ...]] = (
     # Debian family, installed from the .deb this repository builds
-    SupportedDistribution("debian", "12", "Debian GNU/Linux 12 (bookworm)", ci_image="debian:12"),
     SupportedDistribution("debian", "13", "Debian GNU/Linux 13 (trixie)", ci_image="debian:13"),
     SupportedDistribution(
         "ubuntu", "22.04", "Ubuntu 22.04 LTS (jammy jellyfish)", ci_image="ubuntu:22.04"
@@ -106,7 +105,6 @@ SUPPORTED_DISTRIBUTIONS: Final[tuple[SupportedDistribution, ...]] = (
     SupportedDistribution(
         "linuxmint", "22", "Linux Mint 22 (wilma..zena)", derived_from="ubuntu 24.04"
     ),
-    SupportedDistribution("linuxmint", "6", "LMDE 6 (faye)", derived_from="debian 12"),
     SupportedDistribution("linuxmint", "7", "LMDE 7 (gigi)", derived_from="debian 13"),
     SupportedDistribution(
         "elementary", "8", "elementary OS 8 (circe)", derived_from="ubuntu 24.04"
@@ -120,7 +118,6 @@ MINIMUM_PYTHON_VERSION: Final[tuple[int, int]] = (3, 10)
 # distribution named next to them are run in CI on every push.
 TESTED_PYTHON_VERSIONS: Final[tuple[str, ...]] = (
     "3.10.12",  # Ubuntu 22.04, Linux Mint 21.3
-    "3.11.2",  # Debian 12, LMDE 6
     "3.12.3",  # Ubuntu 24.04, Linux Mint 22, elementary OS 8
     "3.13.5",  # Debian 13, LMDE 7
     "3.14.4",  # Ubuntu 26.04

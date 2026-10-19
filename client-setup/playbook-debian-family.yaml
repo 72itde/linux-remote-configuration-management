@@ -1,7 +1,7 @@
 ---
 # Prepares a Debian-family client for lrcm.
 #
-# Covers Debian 12/13, Ubuntu 24.04/26.04 LTS, Linux Mint, LMDE and
+# Covers Debian 13, Ubuntu 24.04/26.04 LTS, Linux Mint, LMDE and
 # elementary OS - the package names are identical on all of them.
 #
 #   ansible-playbook -i localhost, -c local client-setup/playbook-debian-family.yaml

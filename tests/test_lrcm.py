@@ -49,8 +49,6 @@ def test_version_matches(actual: str, expected: str, result: bool) -> None:
 @pytest.mark.parametrize(
     ("distro_id", "version"),
     [
-        ("debian", "12"),
-        ("debian", "12.11"),
         ("debian", "13"),
         ("debian", "13.2"),
         # every Ubuntu point release, which is what distro.version() reports
@@ -64,7 +62,6 @@ def test_version_matches(actual: str, expected: str, result: bool) -> None:
         ("ubuntu", "26.04.2"),
         ("fedora", "43"),
         ("fedora", "44"),
-        ("linuxmint", "6"),
         ("linuxmint", "7"),
         ("linuxmint", "21.3"),
         # the whole Linux Mint 22 series: 22, 22.1, 22.2, 22.3, ...
@@ -134,7 +131,7 @@ def test_every_ci_matrix_entry_uses_a_known_install_mode() -> None:
             assert entry["mode"] == "source"
 
 
-@pytest.mark.parametrize("series", ["3.10", "3.11", "3.12", "3.13", "3.14"])
+@pytest.mark.parametrize("series", ["3.10", "3.12", "3.13", "3.14"])
 def test_every_supported_distribution_series_is_covered(series: str) -> None:
     assert series in lrcm.TESTED_PYTHON_SERIES
 

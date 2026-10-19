@@ -1,5 +1,15 @@
 # changelog
 
+## 0.10.0
+
+### removed
+
+- **Debian 12 (bookworm) and LMDE 6 (faye) are no longer supported**, as Debian
+  12 has reached end of life. lrcm now refuses to run on them (exit code 1),
+  and CI no longer tests Debian 12. Python 3.11 was only covered through those
+  two, so it is no longer listed as tested: an interpreter of that series logs
+  a warning but keeps running.
+
 ## 0.9.1
 
 ### changed
