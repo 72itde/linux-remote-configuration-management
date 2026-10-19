@@ -17,7 +17,6 @@ concurrency:
 
 env:
   # Base images are pinned to an exact version tag AND a sha256 digest.
-  DEBIAN_12: docker.io/library/debian:12@sha256:813017f3d62be4b5891a7acca6a01bdcd4b8513daa81b1ab99d3a50385b26931
   DEBIAN_13: docker.io/library/debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958
   UBUNTU_2204: docker.io/library/ubuntu:22.04@sha256:3b06811b2afd352be909dd088a004166d665dc76d38b13eada33522a9d915c6f
   UBUNTU_2404: docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
@@ -146,12 +145,8 @@ jobs:
       matrix:
         include:
           # Debian family: installed from the .deb this repository builds.
-          # Linux Mint 21.3 / 22, LMDE 6 / 7 and elementary OS 8 are rebuilds
+          # Linux Mint 21.3 / 22, LMDE 7 and elementary OS 8 are rebuilds
           # of these and have no public image of their own.
-          - name: Debian 12 (bookworm)
-            image_env: DEBIAN_12
-            image: debian:12
-            mode: package
           - name: Debian 13 (trixie)
             image_env: DEBIAN_13
             image: debian:13

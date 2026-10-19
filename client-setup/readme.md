@@ -5,7 +5,7 @@ cron is running. Run them once per machine, before lrcm itself.
 
 | playbook | covers |
 | --- | --- |
-| [playbook-debian-family.yaml](playbook-debian-family.yaml) | Debian 12/13, Ubuntu 24.04/26.04 LTS, Linux Mint, LMDE, elementary OS |
+| [playbook-debian-family.yaml](playbook-debian-family.yaml) | Debian 13, Ubuntu 24.04/26.04 LTS, Linux Mint, LMDE, elementary OS |
 | [playbook-fedora.yaml](playbook-fedora.yaml) | Fedora |
 
 Both playbooks run against the local machine and need root:

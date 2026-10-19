@@ -5,7 +5,8 @@
 # derivatives mark the system interpreter as externally managed (PEP 668).
 # This file exists for CI and for development environments.
 #
-# Lower bounds match what the oldest supported distribution (Debian 12) ships.
+# Lower bounds are what CI and development use; the distribution packages on
+# older supported releases may be older.
 GitPython>=3.1.61
 ansible-runner>=2.4.3
 Jinja2>=3.1.6
