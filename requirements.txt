@@ -9,5 +9,5 @@
 GitPython>=3.1.61
 ansible-runner>=2.4.3
 Jinja2>=3.1.6
-distro>=1.8.0
+distro>=1.9.0
 validators>=0.35.0
